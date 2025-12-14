@@ -347,6 +347,7 @@ def run_multimodal_generation(args) -> None:
             prompt,
         ],
         model=model_name,
+        # modalities=["text"],
         extra_body=extra_body,
     )
 

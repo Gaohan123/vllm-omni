@@ -430,11 +430,9 @@ class OmniLLM:
                             stage_id,
                             e,
                         )
-                    if stage_id == final_stage_id_to_prompt[req_id]:
-                        break
 
                 next_stage_id = stage_id + 1
-                if next_stage_id < num_stages:
+                if next_stage_id <= final_stage_id_to_prompt[req_id]:
                     next_stage: OmniStage = self.stage_list[next_stage_id]
                     try:
                         next_inputs = next_stage.process_engine_inputs(self.stage_list, [request_id_to_prompt[req_id]])

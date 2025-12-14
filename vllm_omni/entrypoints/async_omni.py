@@ -164,6 +164,7 @@ class AsyncOmni(EngineClient):
         results.sort(key=lambda x: x[0])
         self.stage_list = [st for _, st in results]
         self.default_sampling_params_list = [st.default_sampling_params for st in self.stage_list]
+        self.output_modalities = [st.final_output_type for st in self.stage_list]
         logger.debug("[Orchestrator] Loaded %d stages", len(self.stage_list))
 
         if self.worker_backend == "ray":
@@ -268,9 +269,10 @@ class AsyncOmni(EngineClient):
         self,
         prompt: PromptType,
         request_id: str,
-        sampling_params_list: SamplingParams | Sequence[SamplingParams] | None = None,
-        lora_request: LoRARequest | None = None,
-        trace_headers: Mapping[str, str] | None = None,
+        sampling_params_list: Optional[Union[SamplingParams, Sequence[SamplingParams]]] = None,
+        output_modalities: Optional[list[str]] = None,
+        lora_request: Optional[LoRARequest] = None,
+        trace_headers: Optional[Mapping[str, str]] = None,
         priority: int = 0,
         data_parallel_rank: int | None = None,
     ) -> AsyncGenerator[OmniRequestOutput, None]:
@@ -324,12 +326,13 @@ class AsyncOmni(EngineClient):
         # Determine the final stage for E2E stats (highest stage_id with
         # final_output=True; fallback to last stage)
         final_stage_id_for_e2e = -1
-        last_stage_id = len(self.stage_list) - 1
+        if output_modalities is None:
+            output_modalities = self.output_modalities
+
         try:
-            for _sid in range(last_stage_id, -1, -1):
-                if getattr(self.stage_list[_sid], "final_output", False):
-                    final_stage_id_for_e2e = _sid
-                    break
+            for _sid, _st in enumerate(self.stage_list):
+                if getattr(_st, "final_output", False) and _st.final_output_type in output_modalities:
+                    final_stage_id_for_e2e = max(final_stage_id_for_e2e, _sid)
             if final_stage_id_for_e2e < 0:
                 final_stage_id_for_e2e = last_stage_id
         except Exception as e:
@@ -439,11 +442,11 @@ class AsyncOmni(EngineClient):
                     request_output=engine_outputs,
                 )
 
-            next_stage_id = stage_id + 1
-            if next_stage_id < num_stages:
-                next_stage: OmniStage = self.stage_list[next_stage_id]
-                next_inputs = next_stage.process_engine_inputs(self.stage_list, prompt)
-                sp_next: SamplingParams = sampling_params_list[next_stage_id]
+                next_stage_id = stage_id + 1
+                if next_stage_id <= final_stage_id_for_e2e:
+                    next_stage: OmniStage = self.stage_list[next_stage_id]
+                    next_inputs = next_stage.process_engine_inputs(self.stage_list, prompt)
+                    sp_next: SamplingParams = sampling_params_list[next_stage_id]
 
                 # Check if we have a connector for this edge
                 connector_key = (str(stage_id), str(next_stage_id))
