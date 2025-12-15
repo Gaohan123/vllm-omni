@@ -326,6 +326,7 @@ class AsyncOmni(EngineClient):
         # Determine the final stage for E2E stats (highest stage_id with
         # final_output=True; fallback to last stage)
         final_stage_id_for_e2e = -1
+        last_stage_id = num_stages - 1
         if output_modalities is not None:
             prompt_modalities = []
             for modality in output_modalities:

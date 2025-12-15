@@ -372,7 +372,7 @@ def main(args):
             lines = [ln.strip() for ln in f.readlines()]
             prompts = [get_text_query(ln).inputs for ln in lines if ln != ""]
             print(f"[Info] Loaded {len(prompts)} prompts from {args.txt_prompts}")
-    
+
     if args.modalities is not None:
         output_modalities = args.modalities.split(",")
         for i, prompt in enumerate(prompts):

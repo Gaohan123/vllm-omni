@@ -440,7 +440,7 @@ def build_interface(
         image_file: Image.Image | None,
         video_file: str | None,
         use_audio_in_video: bool,
-        output_modalities: Optional[str]=None,
+        output_modalities: Optional[str] = None,
     ):
         return await run_inference_async_omni(
             omni,
@@ -518,7 +518,7 @@ def build_interface(
                     scale=1,
                     elem_classes="audio-input",
                 )
-        
+
         with gr.Row():
             output_modalities = gr.Textbox(
                 label="Output Modalities",

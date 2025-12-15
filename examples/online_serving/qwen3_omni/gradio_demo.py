@@ -524,7 +524,7 @@ def build_interface(
                     scale=1,
                     elem_classes="audio-input",
                 )
-        
+
         with gr.Row():
             output_modalities = gr.Textbox(
                 label="Output Modalities",

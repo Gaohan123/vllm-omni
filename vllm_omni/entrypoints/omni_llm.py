@@ -306,15 +306,15 @@ class OmniLLM:
                     output_modalities = prompt_modalities
                 else:
                     output_modalities = self.output_modalities
-                
+
                 for _sid, _st in enumerate(self.stage_list):
                     if getattr(_st, "final_output", False) and _st.final_output_type in output_modalities:
                         final_stage_id_for_e2e = max(final_stage_id_for_e2e, _sid)
-                
+
                 if final_stage_id_for_e2e < 0:
                     final_stage_id_for_e2e = len(self.stage_list) - 1
                 final_stage_id_to_prompt[rid] = final_stage_id_for_e2e
-            
+
         except Exception as e:
             logger.debug(
                 "[Orchestrator] Failed to determine final stage for E2E; falling back to last: %s",

@@ -340,7 +340,7 @@ def run_multimodal_generation(args) -> None:
 
     if args.query_type == "use_audio_in_video":
         extra_body["mm_processor_kwargs"] = {"use_audio_in_video": True}
-    
+
     if args.modalities is not None:
         output_modalities = args.modalities.split(",")
     else:
