@@ -297,7 +297,13 @@ class OmniLLM:
             for rid, prompt in request_id_to_prompt.items():
                 final_stage_id_for_e2e = -1
                 if "modalities" in prompt:
-                    output_modalities = prompt["modalities"]
+                    prompt_modalities = []
+                    for modality in prompt["modalities"]:
+                        if modality not in self.output_modalities:
+                            logger.warning(f"Invalid output modality: {modality}, ignoring it")
+                            continue
+                        prompt_modalities.append(modality)
+                    output_modalities = prompt_modalities
                 else:
                     output_modalities = self.output_modalities
                 

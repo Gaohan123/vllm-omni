@@ -326,7 +326,15 @@ class AsyncOmni(EngineClient):
         # Determine the final stage for E2E stats (highest stage_id with
         # final_output=True; fallback to last stage)
         final_stage_id_for_e2e = -1
-        if output_modalities is None:
+        if output_modalities is not None:
+            prompt_modalities = []
+            for modality in output_modalities:
+                if modality not in self.output_modalities:
+                    logger.warning(f"Invalid output modality: {modality}, ignoring it")
+                    continue
+                prompt_modalities.append(modality)
+            output_modalities = prompt_modalities
+        else:
             output_modalities = self.output_modalities
 
         try:

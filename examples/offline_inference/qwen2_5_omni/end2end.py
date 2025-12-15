@@ -374,9 +374,10 @@ def main(args):
             prompts = [get_text_query(ln).inputs for ln in lines if ln != ""]
             print(f"[Info] Loaded {len(prompts)} prompts from {args.txt_prompts}")
     
-    # for i, prompt in enumerate(prompts):
-    #     if i % 3 == 0:
-    #         prompt["modalities"] = ["text"]
+    if args.modalities is not None:
+        output_modalities = args.modalities.split(",")
+        for i, prompt in enumerate(prompts):
+            prompt["modalities"] = output_modalities
 
     omni_outputs = omni_llm.generate(prompts, sampling_params_list)
 
@@ -509,6 +510,12 @@ def parse_args():
         type=str,
         default=None,
         help="Address of the Ray cluster.",
+    )
+    parser.add_argument(
+        "--modalities",
+        type=str,
+        default=None,
+        help="Modalities to use for the prompts.",
     )
     return parser.parse_args()
 
