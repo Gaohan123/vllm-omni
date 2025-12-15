@@ -161,7 +161,7 @@ echo "Running query type: $QUERY_TYPE"
 echo ""
 
 
-output=$(curl -sS -X POST http://localhost:8011/v1/chat/completions \
+output=$(curl -sS -X POST http://localhost:8091/v1/chat/completions \
     -H "Content-Type: application/json" \
     -d @- <<EOF
 {
