@@ -59,6 +59,7 @@ from vllm_omni.entrypoints.utils import (
     load_stage_configs_from_model,
     load_stage_configs_from_yaml,
     resolve_model_config_path,
+    get_final_stage_id_for_e2e,
 )
 from vllm_omni.outputs import OmniRequestOutput
 
@@ -325,33 +326,8 @@ class AsyncOmni(EngineClient):
 
         # Determine the final stage for E2E stats (highest stage_id with
         # final_output=True; fallback to last stage)
-        final_stage_id_for_e2e = -1
-        last_stage_id = num_stages - 1
-        if output_modalities is not None:
-            prompt_modalities = []
-            for modality in output_modalities:
-                if modality not in self.output_modalities:
-                    logger.warning(f"Invalid output modality: {modality}, ignoring it")
-                    continue
-                prompt_modalities.append(modality)
-            output_modalities = prompt_modalities
-        else:
-            output_modalities = self.output_modalities
-
-        try:
-            for _sid, _st in enumerate(self.stage_list):
-                if getattr(_st, "final_output", False) and _st.final_output_type in output_modalities:
-                    final_stage_id_for_e2e = max(final_stage_id_for_e2e, _sid)
-            if final_stage_id_for_e2e < 0:
-                final_stage_id_for_e2e = last_stage_id
-        except Exception as e:
-            logger.debug(
-                "[Orchestrator] Failed to determine final stage for E2E; \
-                    falling back to last: %s",
-                e,
-                exc_info=True,
-            )
-            final_stage_id_for_e2e = last_stage_id
+        final_stage_id_for_e2e = get_final_stage_id_for_e2e(output_modalities, self.output_modalities, self.stage_list)
+        
         # Metrics/aggregation helper
         metrics = OrchestratorMetrics(
             num_stages,
@@ -379,7 +355,7 @@ class AsyncOmni(EngineClient):
         logger.debug("[Orchestrator] Enqueued request %s to stage-0", request_id)
 
         logger.debug("[Orchestrator] Entering scheduling loop: stages=%d", num_stages)
-        for stage_id, stage in enumerate(self.stage_list):
+        for stage_id, stage in enumerate(self.stage_list[:final_stage_id_for_e2e + 1]):
             result = await req_state.queue.get()
             assert stage_id == req_state.stage_id
 
@@ -451,11 +427,12 @@ class AsyncOmni(EngineClient):
                     request_output=engine_outputs,
                 )
 
-                next_stage_id = stage_id + 1
-                if next_stage_id <= final_stage_id_for_e2e:
-                    next_stage: OmniStage = self.stage_list[next_stage_id]
-                    next_inputs = next_stage.process_engine_inputs(self.stage_list, prompt)
-                    sp_next: SamplingParams = sampling_params_list[next_stage_id]
+            # Forward to next stage if there is one
+            next_stage_id = stage_id + 1
+            if next_stage_id <= final_stage_id_for_e2e:
+                next_stage: OmniStage = self.stage_list[next_stage_id]
+                next_inputs = next_stage.process_engine_inputs(self.stage_list, prompt)
+                sp_next: SamplingParams = sampling_params_list[next_stage_id]
 
                 # Check if we have a connector for this edge
                 connector_key = (str(stage_id), str(next_stage_id))

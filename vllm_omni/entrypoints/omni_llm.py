@@ -47,6 +47,7 @@ from vllm_omni.entrypoints.utils import (
     load_stage_configs_from_model,
     load_stage_configs_from_yaml,
     resolve_model_config_path,
+    get_final_stage_id_for_e2e,
 )
 from vllm_omni.outputs import OmniRequestOutput
 
@@ -295,24 +296,7 @@ class OmniLLM:
         final_stage_id_to_prompt = {}
         try:
             for rid, prompt in request_id_to_prompt.items():
-                final_stage_id_for_e2e = -1
-                if "modalities" in prompt:
-                    prompt_modalities = []
-                    for modality in prompt["modalities"]:
-                        if modality not in self.output_modalities:
-                            logger.warning(f"Invalid output modality: {modality}, ignoring it")
-                            continue
-                        prompt_modalities.append(modality)
-                    output_modalities = prompt_modalities
-                else:
-                    output_modalities = self.output_modalities
-
-                for _sid, _st in enumerate(self.stage_list):
-                    if getattr(_st, "final_output", False) and _st.final_output_type in output_modalities:
-                        final_stage_id_for_e2e = max(final_stage_id_for_e2e, _sid)
-
-                if final_stage_id_for_e2e < 0:
-                    final_stage_id_for_e2e = len(self.stage_list) - 1
+                final_stage_id_for_e2e = get_final_stage_id_for_e2e(prompt.get("modalities", None), self.output_modalities, self.stage_list)
                 final_stage_id_to_prompt[rid] = final_stage_id_for_e2e
 
         except Exception as e:
@@ -323,6 +307,7 @@ class OmniLLM:
             )
             for rid, prompt in request_id_to_prompt.items():
                 final_stage_id_to_prompt[rid] = len(self.stage_list) - 1
+
         # Metrics/aggregation helper
         metrics = OrchestratorMetrics(
             num_stages,
