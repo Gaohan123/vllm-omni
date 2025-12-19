@@ -383,6 +383,7 @@ class AsyncOmni(OmniBase):
                         logger.debug(
                             f"[{self._name}] Request {req_id} finalized at stage-{stage_id}",
                         )
+
                         # End-to-end timing and time-per-token for final output
                         # (only once per request at the designated final stage)
                         try:
@@ -391,7 +392,7 @@ class AsyncOmni(OmniBase):
                                 metrics.on_finalize_request(
                                     stage_id,
                                     req_id,
-                                    engine_outputs,
+                                    [engine_outputs],
                                     _req_start_ts.get(req_id, _wall_start_ts),
                                 )
                         except Exception as e:
