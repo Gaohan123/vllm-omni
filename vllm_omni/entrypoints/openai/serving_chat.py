@@ -547,7 +547,6 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
         # Send response for each token for each request.n (index)
         num_choices = 1 if request.n is None else request.n
         previous_num_tokens = [0] * num_choices
-        previous_multimodal_lengths = [0] * num_choices
         finish_reason_sent = [False] * num_choices
         num_prompt_tokens = 0
         num_cached_tokens = None
@@ -578,7 +577,6 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
 
         # Always track previous_texts for comprehensive output logging
         previous_texts = [""] * num_choices
-        previous_audio_tensors = [np.array([]).astype(np.float32)] * num_choices
 
         # Only one of these will be used, thus previous_texts and
         # all_previous_token_ids will not be used twice in the same iteration.
@@ -661,7 +659,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                             finish_reason=None)
 
                         # return prompt_token_ids at the first chunk ever
-                        chunk = ChatCompletionStreamResponse(
+                        chunk = OmniChatCompletionStreamResponse(
                             id=request_id,
                             object=chunk_object_type,
                             created=created_time,
@@ -669,7 +667,9 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                             model=model_name,
                             prompt_token_ids=(res.prompt_token_ids
                                               if request.return_token_ids else
-                                              None))
+                                              None),
+                            modality=final_output_type,
+                        )
 
                         # if continuous usage stats are requested, add it
                         if include_continuous_usage:
@@ -698,12 +698,14 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                                             content=last_msg_content),
                                         logprobs=None,
                                         finish_reason=None))
-                                chunk = ChatCompletionStreamResponse(
+                                chunk = OmniChatCompletionStreamResponse(
                                     id=request_id,
                                     object=chunk_object_type,
                                     created=created_time,
                                     choices=[choice_data],
-                                    model=model_name)
+                                    model=model_name,
+                                    modality=final_output_type,
+                                )
                                 if include_continuous_usage:
                                     chunk.usage = UsageInfo(
                                         prompt_tokens=num_prompt_tokens,
@@ -1135,12 +1137,14 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
 
                             finish_reason_sent[i] = True
 
-                        chunk = ChatCompletionStreamResponse(
+                        chunk = OmniChatCompletionStreamResponse(
                             id=request_id,
                             object=chunk_object_type,
                             created=created_time,
                             choices=[choice_data],
-                            model=model_name)
+                            model=model_name,
+                            modality=final_output_type,
+                        )
 
                         # handle usage stats if requested & if continuous
                         if include_continuous_usage:
@@ -1270,6 +1274,9 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
 
         for omni_outputs in final_outputs:
             choices_data = []
+            if not getattr(omni_outputs.request_output, "finished", False):
+                continue
+            
             if omni_outputs.final_output_type == "text":
                 (
                     choices_data,
@@ -1569,7 +1576,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
             usage.prompt_tokens_details = PromptTokenUsageInfo(cached_tokens=final_res.num_cached_tokens)
 
         prompt_logprobs = clamp_prompt_logprobs(final_res.prompt_logprobs)
-        prompt_token_ids = final_res.prompt_token_ids if request.return_token_ids else- None
+        prompt_token_ids = final_res.prompt_token_ids if request.return_token_ids else None
         kv_transfer_params = final_res.kv_transfer_params
 
         return choices, usage, prompt_logprobs, prompt_token_ids, kv_transfer_params
@@ -1630,7 +1637,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
             choices.append(choice_data)
         return choices
 
-    def _create_image_choice(self, omni_outputs: OmniRequestOutput, role: str):
+    def _create_image_choice(self, omni_outputs: OmniRequestOutput, role: str, request: ChatCompletionRequest, stream: bool = False):
         """Create chat completion response choices for image output.
 
         Converts image tensor or PIL Image output from diffusion models
