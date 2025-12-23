@@ -749,7 +749,12 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                             cur_recipient = harmony_parser.current_recipient
                             delta_text = harmony_parser.last_content_delta or ""
                         else:
-                            delta_text = output.text
+                            # output.text is cumulative, extract only the delta portion
+                            previous_text = previous_texts[i] if previous_texts else ""
+                            if output.text is not None:
+                                delta_text = output.text[len(previous_text):]
+                            else:
+                                delta_text = ""
 
                         if not delta_text and not output.token_ids and \
                             not previous_num_tokens[i]:
