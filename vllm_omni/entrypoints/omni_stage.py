@@ -7,7 +7,6 @@ the original input processing utilities for cross-stage data wiring.
 """
 
 import asyncio
-import copy
 import fcntl
 import importlib
 import multiprocessing as mp
