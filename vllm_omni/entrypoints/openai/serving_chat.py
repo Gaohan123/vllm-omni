@@ -1300,7 +1300,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
 
         for omni_outputs in final_outputs:
             choices_data = []
-            if not omni_outputs.finished:
+            if omni_outputs.request_output is not None and not getattr(omni_outputs.request_output, "finished", False):
                 continue
 
             if omni_outputs.final_output_type == "text":
