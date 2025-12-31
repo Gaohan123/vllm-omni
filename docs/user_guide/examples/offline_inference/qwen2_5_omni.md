@@ -88,10 +88,6 @@ sudo apt install ffmpeg
     ``````py
     --8<-- "examples/offline_inference/qwen2_5_omni/extract_prompts.py"
     ``````
-??? abstract "output_audio/0_9eea45f5-1df5-42d8-9ddc-59e4d831ca74.txt"
-    ``````txt
-    --8<-- "examples/offline_inference/qwen2_5_omni/output_audio/0_9eea45f5-1df5-42d8-9ddc-59e4d831ca74.txt"
-    ``````
 ??? abstract "run_multiple_prompts.sh"
     ``````sh
     --8<-- "examples/offline_inference/qwen2_5_omni/run_multiple_prompts.sh"
