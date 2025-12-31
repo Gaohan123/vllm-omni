@@ -4,9 +4,8 @@
 
 Main entry points for vLLM-Omni inference and serving.
 
-
-- [vllm_omni.entrypoints.async_omni_diffusion.AsyncOmniDiffusion][]
 - [vllm_omni.entrypoints.async_omni.AsyncOmni][]
+- [vllm_omni.entrypoints.async_omni_diffusion.AsyncOmniDiffusion][]
 - [vllm_omni.entrypoints.async_omni_llm.AsyncOmniLLM][]
 - [vllm_omni.entrypoints.chat_utils.OmniAsyncMultiModalContentParser][]
 - [vllm_omni.entrypoints.chat_utils.OmniAsyncMultiModalItemTracker][]
@@ -14,11 +13,14 @@ Main entry points for vLLM-Omni inference and serving.
 - [vllm_omni.entrypoints.cli.serve.OmniServeCommand][]
 - [vllm_omni.entrypoints.client_request_state.ClientRequestState][]
 - [vllm_omni.entrypoints.log_utils.OrchestratorMetrics][]
+- [vllm_omni.entrypoints.log_utils.StageRequestMetrics][]
+- [vllm_omni.entrypoints.log_utils.StageStats][]
 - [vllm_omni.entrypoints.omni.Omni][]
+- [vllm_omni.entrypoints.omni.OmniBase][]
 - [vllm_omni.entrypoints.omni_diffusion.OmniDiffusion][]
 - [vllm_omni.entrypoints.omni_llm.OmniLLM][]
-- [vllm_omni.entrypoints.omni_llm.OmniStageLLM][]
 - [vllm_omni.entrypoints.omni_stage.OmniStage][]
+- [vllm_omni.entrypoints.stage_utils.OmniStageTaskType][]
 
 ## Inputs
 
@@ -110,6 +112,7 @@ Worker classes and model runners for distributed inference.
 - [vllm_omni.worker.gpu_generation_model_runner.GPUGenerationModelRunner][]
 - [vllm_omni.worker.gpu_generation_worker.GPUGenerationWorker][]
 - [vllm_omni.worker.gpu_model_runner.OmniGPUModelRunner][]
+- [vllm_omni.worker.npu.npu_ar_model_runner.ExecuteModelState][]
 - [vllm_omni.worker.npu.npu_ar_model_runner.NPUARModelRunner][]
 - [vllm_omni.worker.npu.npu_ar_worker.NPUARWorker][]
 - [vllm_omni.worker.npu.npu_generation_model_runner.NPUGenerationModelRunner][]

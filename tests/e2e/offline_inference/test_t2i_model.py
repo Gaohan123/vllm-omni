@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 import torch
 
-from vllm_omni.utils.platform_utils import is_npu, is_rocm
 from vllm_omni.outputs import OmniRequestOutput
+from vllm_omni.utils.platform_utils import is_npu, is_rocm
 
 # ruff: noqa: E402
 REPO_ROOT = Path(__file__).resolve().parents[2]

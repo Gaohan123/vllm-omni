@@ -216,7 +216,7 @@ class OmniMsgpackDecoder:
 
     def _is_omni_request_output(self, obj: dict[str, Any]) -> bool:
         """Check if a dict looks like an OmniRequestOutput.
-        
+
         OmniRequestOutput can be identified by:
         - Having 'finished' and 'final_output_type' fields (unique to OmniRequestOutput)
         - OR having 'finished' and 'images' fields (diffusion mode)
@@ -224,25 +224,25 @@ class OmniMsgpackDecoder:
         # Must have 'finished' field
         if "finished" not in obj:
             return False
-        
+
         # Check for unique identifier: 'final_output_type'
         if "final_output_type" in obj:
             return True
-        
+
         # Alternative: check for 'images' field (diffusion mode)
         if "images" in obj:
             return True
-        
+
         return False
 
     def _decode_omni_request_output(self, obj: dict[str, Any]) -> Any:
         """Decode dict to OmniRequestOutput.
-        
+
         OmniRequestOutput is a dataclass, so we can use msgspec.convert
         or construct it directly.
         """
         from vllm_omni.outputs import OmniRequestOutput
-        
+
         try:
             # Use msgspec.convert for dataclass reconstruction
             return msgspec.convert(obj, OmniRequestOutput)

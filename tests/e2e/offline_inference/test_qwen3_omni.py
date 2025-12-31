@@ -61,7 +61,7 @@ def test_video_to_audio(omni_runner: type[OmniRunner], test_config) -> None:
                 audio_output = stage_output
                 output_count += 1
                 break
-            
+
         assert output_count > 0
         assert audio_output is not None
         assert len(audio_output.request_output) > 0

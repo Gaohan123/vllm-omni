@@ -5,8 +5,8 @@ import gradio as gr
 import torch
 
 from vllm_omni.entrypoints.omni import Omni
-from vllm_omni.utils.platform_utils import detect_device_type, is_npu
 from vllm_omni.outputs import OmniRequestOutput
+from vllm_omni.utils.platform_utils import detect_device_type, is_npu
 
 ASPECT_RATIOS: dict[str, tuple[int, int]] = {
     "1:1": (1328, 1328),

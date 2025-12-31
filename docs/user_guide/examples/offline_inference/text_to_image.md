@@ -8,8 +8,6 @@ This folder provides several entrypoints for experimenting with `Qwen/Qwen-Image
 - `text_to_image.py`: command-line script for single image generation with advanced options.
 - `web_demo.py`: lightweight Gradio UI for interactive prompt/seed/CFG exploration.
 
-Note that when you pass in multiple independent prompts, they will be processed sequentially. Batching requests is currently not supported.
-
 ## Basic Usage
 
 ```python
@@ -19,7 +17,7 @@ if __name__ == "__main__":
     omni = Omni(model="Qwen/Qwen-Image")
     prompt = "a cup of coffee on the table"
     outputs = omni.generate(prompt)
-    images = outputs[0].request_output[0]["images"]
+    images = list(outputs)[0].request_output[0].images
     images[0].save("coffee.png")
 ```
 

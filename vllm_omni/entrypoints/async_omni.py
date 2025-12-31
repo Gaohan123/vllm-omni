@@ -397,7 +397,8 @@ class AsyncOmni(OmniBase):
                                 )
                         except Exception as e:
                             logger.exception(
-                                f"[{self._name}] Finalize request handling error for req {req_id} at stage {stage_id}: {e}",
+                                f"[{self._name}] Finalize request handling error for req "
+                                f"{req_id} at stage {stage_id}: {e}",
                             )
 
                         # Handle diffusion outputs that already contain images

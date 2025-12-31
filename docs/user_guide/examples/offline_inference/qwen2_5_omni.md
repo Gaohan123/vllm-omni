@@ -70,6 +70,13 @@ If media file paths are not provided, the script will use default assets. Suppor
 - `use_audio_in_video`: Extract audio from video
 - `text`: Text-only query
 
+### FAQ
+
+If you encounter error about backend of librosa, try to install ffmpeg with command below.
+```
+sudo apt update
+sudo apt install ffmpeg
+```
 
 ## Example materials
 
@@ -80,6 +87,10 @@ If media file paths are not provided, the script will use default assets. Suppor
 ??? abstract "extract_prompts.py"
     ``````py
     --8<-- "examples/offline_inference/qwen2_5_omni/extract_prompts.py"
+    ``````
+??? abstract "output_audio/0_9eea45f5-1df5-42d8-9ddc-59e4d831ca74.txt"
+    ``````txt
+    --8<-- "examples/offline_inference/qwen2_5_omni/output_audio/0_9eea45f5-1df5-42d8-9ddc-59e4d831ca74.txt"
     ``````
 ??? abstract "run_multiple_prompts.sh"
     ``````sh
