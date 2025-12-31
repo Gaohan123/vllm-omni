@@ -60,10 +60,13 @@ def test_mixed_modalities_to_audio(omni_runner: type[OmniRunner], test_config: t
 
         # Find and verify text output (thinker stage)
         text_output = None
+        output_count = 0
         for stage_output in outputs:
             if stage_output.final_output_type == "text":
                 text_output = stage_output
+                output_count += 1
                 break
+        assert output_count > 0
 
         assert text_output is not None
         assert len(text_output.request_output) > 0
@@ -73,10 +76,13 @@ def test_mixed_modalities_to_audio(omni_runner: type[OmniRunner], test_config: t
 
         # Find and verify audio output (code2wav stage)
         audio_output = None
+        output_count = 0
         for stage_output in outputs:
             if stage_output.final_output_type == "audio":
                 audio_output = stage_output
+                output_count += 1
                 break
+        assert output_count > 0
 
         assert audio_output is not None
         assert len(audio_output.request_output) > 0
@@ -112,11 +118,14 @@ def test_mixed_modalities_to_text_only(omni_runner: type[OmniRunner], test_confi
 
         # Find and verify text output (thinker stage)
         text_output = None
+        output_count = 0
         for stage_output in outputs:
             assert stage_output.final_output_type != "audio"
             if stage_output.final_output_type == "text":
                 text_output = stage_output
+                output_count += 1
                 break
+        assert output_count > 0
 
         assert text_output is not None
         assert len(text_output.request_output) > 0

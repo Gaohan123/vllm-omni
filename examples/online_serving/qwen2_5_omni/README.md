@@ -57,7 +57,45 @@ bash run_curl_multimodal_generation.sh mixed_modalities
 ```
 
 ## Modality control
-If you want to control output modalities, e.g. only output text, you can run the command below:
+You can control output modalities to specify which types of output the model should generate. This is useful when you only need text output and want to skip audio generation stages for better performance.
+
+### Supported modalities
+
+| Modalities | Output |
+|------------|--------|
+| `["text"]` | Text only |
+| `["audio"]` | Text + Audio |
+| `["text", "audio"]` | Text + Audio |
+| Not specified | Text + Audio (default) |
+
+### Using curl
+
+#### Text only
+
+```bash
+curl http://localhost:8091/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Qwen/Qwen2.5-Omni-7B",
+    "messages": [{"role": "user", "content": "Describe vLLM in brief."}],
+    "modalities": ["text"]
+  }'
+```
+
+#### Text + Audio
+
+```bash
+curl http://localhost:8091/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Qwen/Qwen2.5-Omni-7B",
+    "messages": [{"role": "user", "content": "Describe vLLM in brief."}],
+    "modalities": ["audio"]
+  }'
+```
+
+### Using Python client
+
 ```bash
 python openai_chat_completion_client_for_multimodal_generation.py \
     --query-type mixed_modalities \
