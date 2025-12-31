@@ -34,7 +34,7 @@ if __name__ == "__main__":
     ]
     outputs = omni.generate(prompts)
     for i, output in enumerate(outputs):
-      image = output.request_output[0]["images"][0].save(f"{i}.jpg")
+      image = output.request_output[0].images[0].save(f"{i}.jpg")
 ```
 
 ## Local CLI Usage
