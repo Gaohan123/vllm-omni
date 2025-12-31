@@ -1915,9 +1915,7 @@ class OmniOpenAIServingChat(OpenAIServingChat, AudioMixin):
                 result = await self._diffusion_engine.generate(**gen_kwargs)
             # Extract images from result
             # Handle nested OmniRequestOutput structure where images might be in request_output
-            images: list[Image.Image] = []
-            if result.request_output["images"]:
-                images = result.request_output["images"]
+            images = getattr(result.request_output, "images", [])
 
             # Convert images to base64 content
             image_contents: list[dict[str, Any]] = []
