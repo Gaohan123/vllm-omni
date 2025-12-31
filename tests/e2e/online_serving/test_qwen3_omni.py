@@ -6,7 +6,6 @@ E2E Online tests for Qwen3-Omni model with video input and audio output.
 
 import base64
 import concurrent.futures
-import base64
 import ctypes
 import os
 import signal
