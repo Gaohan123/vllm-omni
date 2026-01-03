@@ -91,3 +91,7 @@ sudo apt install ffmpeg
     ``````sh
     --8<-- "examples/offline_inference/qwen3_omni/run_single_prompt_tp.sh"
     ``````
+??? abstract "text_prompts_10.txt"
+    ``````txt
+    --8<-- "examples/offline_inference/qwen3_omni/text_prompts_10.txt"
+    ``````

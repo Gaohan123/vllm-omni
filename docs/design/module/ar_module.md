@@ -1,17 +1,18 @@
-# Architecture Design: AutoRegressive (AR) Module
+# AutoRegressive (AR) Module
 
 ## 1. Overview
 
 The AutoRegressive (AR) module in vLLM-Omni handles autoregressive generation stages, primarily used for text, chain-of-thought(COT), and audio latent tokens generation stages in multi-stage models like Qwen2.5-Omni, Qwen3-Omni, BAGEL, .etc. Unlike some representative non-autoregressive generation stages (e.g., Diffusion), AR stages generate tokens sequentially, one at a time, following the standard transformer decoder pattern.
 
 The AR module of vLLM-Omni extends vLLM's core components to support:
+
 - **Multimodal inputs/outputs**: Processing images, videos, and audio alongside text
 - **Direct embedding transfer**: Passing pre-computed prompt embeddings between pipeline stages via serialized payloads
 - **Additional information flow**: Carrying per-request metadata (tensors, lists) through the pipeline
 - **Hidden state exposure**: Exposing per-request hidden representations for downstream stages
 - **Basic generator support**: Support some basic heterogeneous architecture such as Convolution, LSTM, etc.
 
-As shown in the [end2end example](../../../examples/offline_inference/qwen3_omni/end2end.py), AR module can be widely applied across multiple stages, generating text tokens in thinker(AR), audio latent tokens in talker(AR) and audio wave in code2wav(Convolution).
+As shown in the [end2end example](../../user_guide/examples/offline_inference/qwen3_omni.md), AR module can be widely applied across multiple stages, generating text tokens in thinker(AR), audio latent tokens in talker(AR) and audio wave in code2wav(Convolution).
 
 ## 2. Relationship with vLLM
 
@@ -87,7 +88,7 @@ classDiagram
     class OmniInputProcessor {
         +process_inputs() OmniEngineCoreRequest
     }
-    
+
     class VLLMOutputProcessor {
         +process_outputs() OutputProcessorOutput
     }
@@ -101,11 +102,11 @@ classDiagram
 
 ### Key Extensions
 
-- **Scheduler**: [`OmniARScheduler`](../../../vllm_omni/core/sched/omni_ar_scheduler.py) extends `vllm.v1.core.sched.scheduler.Scheduler` to enrich scheduled requests with omni-specific payloads
-- **Worker**: [`GPUARWorker`](../../../vllm_omni/worker/gpu_ar_worker.py) extends `vllm.v1.worker.gpu_worker.Worker` to initialize AR-specific model runners
-- **ModelRunner**: [`GPUARModelRunner`](../../../vllm_omni/worker/gpu_ar_model_runner.py) extends [`OmniGPUModelRunner`](../../../vllm_omni/worker/gpu_model_runner.py) → `vllm.v1.worker.gpu_model_runner.GPUModelRunner` to expose hidden states and handle multimodal outputs
-- **InputProcessor**: [`OmniInputProcessor`](../../../vllm_omni/engine/input_processor.py) extends `vllm.v1.engine.input_processor.InputProcessor` to serialize prompt embeddings and additional information
-- **OutputProcessor**: [`MultimodalOutputProcessor`](../../../vllm_omni/engine/output_processor.py) extends `vllm.v1.engine.output_processor.OutputProcessor` to route and accumulate multimodal outputs
+- **Scheduler**: `OmniARScheduler` extends `vllm.v1.core.sched.scheduler.Scheduler` to enrich scheduled requests with omni-specific payloads
+- **Worker**: `GPUARWorker` extends `vllm.v1.worker.gpu_worker.Worker` to initialize AR-specific model runners
+- **ModelRunner**: `GPUARModelRunner` extends `OmniGPUModelRunner` → `vllm.v1.worker.gpu_model_runner.GPUModelRunner` to expose hidden states and handle multimodal outputs
+- **InputProcessor**: `OmniInputProcessor` extends `vllm.v1.engine.input_processor.InputProcessor` to serialize prompt embeddings and additional information
+- **OutputProcessor**: `MultimodalOutputProcessor` extends `vllm.v1.engine.output_processor.OutputProcessor` to route and accumulate multimodal outputs
 
 ## 3. Scheduler Design
 
@@ -125,7 +126,7 @@ flowchart TD
     D -->|sample_tokens: OmniModelRunnerOutput| F[OmniARScheduler]
     F -->|update_from_output| G[MultimodalOutputProcessor]
     G -->|RequestOutput| H[Client/Downstream Stage]
-    
+
     style A fill:#e1f5ff
     style B fill:#fff4e1
     style C fill:#e8f5e9
@@ -137,7 +138,7 @@ The flow follows vLLM's standard pattern: input processing → scheduling → wo
 
 ### OmniARScheduler
 
-[`OmniARScheduler`](../../../vllm_omni/core/sched/omni_ar_scheduler.py) extends the base vLLM scheduler with minimal modifications, focusing on enriching scheduled requests with omni-specific payloads.
+`OmniARScheduler` extends the base vLLM scheduler with minimal modifications, focusing on enriching scheduled requests with omni-specific payloads.
 
 #### Modified API: `schedule()`
 
@@ -166,7 +167,7 @@ The `update_from_output()` method remains unchanged, inheriting standard request
 
 ### OmniGenerationScheduler
 
-[`OmniGenerationScheduler`](../../../vllm_omni/core/sched/omni_generation_scheduler.py) implements a fast-path scheduling strategy for basic heterogeneous architectures that process all input tokens in a single step.
+`OmniGenerationScheduler` implements a fast-path scheduling strategy for basic heterogeneous architectures that process all input tokens in a single step.
 
 #### Modified API: `schedule()`
 
@@ -200,7 +201,7 @@ def update_from_output(self, ...) -> dict[int, EngineCoreOutputs]:
 
 ### GPUARWorker
 
-[`GPUARWorker`](../../../vllm_omni/worker/gpu_ar_worker.py) initializes the AR-specific model runner while maintaining standard device initialization:
+`GPUARWorker` initializes the AR-specific model runner while maintaining standard device initialization:
 
 ```python
 class GPUARWorker(GPUWorker):
@@ -211,7 +212,7 @@ class GPUARWorker(GPUWorker):
 
 ### GPUARModelRunner
 
-[`GPUARModelRunner`](../../../vllm_omni/worker/gpu_ar_model_runner.py) follows vLLM's two-phase execute/sample flow while exposing hidden states and multimodal outputs.
+`GPUARModelRunner` follows vLLM's two-phase execute/sample flow while exposing hidden states and multimodal outputs.
 
 #### Two-Phase Execution
 
@@ -230,10 +231,10 @@ class GPUARWorker(GPUWorker):
 def sample_tokens(self, grammar_output) -> OmniModelRunnerOutput:
     # Retrieve stored state
     hidden_states, multimodal_outputs = self.execute_model_state
-    
+
     # Sample tokens
     sampler_output = self._sample(logits, spec_decode_metadata)
-    
+
     # Extract per-request hidden states
     pooler_output = []
     for rid in req_ids:
@@ -241,7 +242,7 @@ def sample_tokens(self, grammar_output) -> OmniModelRunnerOutput:
         payload = {"hidden": hidden_slice}
         # Add multimodal outputs if present
         pooler_output.append(payload)
-    
+
     return OmniModelRunnerOutput(
         pooler_output=pooler_output,
         # ... other fields ...
@@ -250,7 +251,7 @@ def sample_tokens(self, grammar_output) -> OmniModelRunnerOutput:
 
 ### GPUGenerationModelRunner
 
-[`GPUGenerationModelRunner`](../../../vllm_omni/worker/gpu_generation_model_runner.py) implements a simplified single-phase execution for basic heterogeneous architectures:
+`GPUGenerationModelRunner` implements a simplified single-phase execution for basic heterogeneous architectures:
 
 - No logits computation or token sampling
 - Direct generation from forward pass in model implementation
@@ -258,7 +259,7 @@ def sample_tokens(self, grammar_output) -> OmniModelRunnerOutput:
 
 ### OmniGPUModelRunner
 
-[`OmniGPUModelRunner`](../../../vllm_omni/worker/gpu_model_runner.py) provides shared functionality for both AR and Generation runners:
+`OmniGPUModelRunner` provides shared functionality for both AR and Generation runners:
 
 #### Prompt Embeddings Overlay
 
@@ -301,7 +302,7 @@ sequenceDiagram
     participant ModelRunner
     participant MultimodalOutputProcessor
     participant Client
-    
+
     Client->>OmniInputProcessor: prompt + prompt_embeds + additional_info
     OmniInputProcessor->>OmniInputProcessor: Serialize tensors to payloads
     OmniInputProcessor->>Scheduler: OmniEngineCoreRequest (with payloads)
@@ -319,7 +320,7 @@ sequenceDiagram
 
 ### OmniInputProcessor
 
-[`OmniInputProcessor`](../../../vllm_omni/engine/input_processor.py) extends the base input processor to serialize prompt embeddings and additional information for inter-stage transfer.
+`OmniInputProcessor` extends the base input processor to serialize prompt embeddings and additional information for inter-stage transfer.
 
 #### Payload Serialization
 
@@ -335,7 +336,7 @@ def process_inputs(self, ...) -> OmniEngineCoreRequest:
             shape=[seq_len, hidden_size],
             dtype=dtype_str,
         )
-    
+
     # Serialize additional_information
     if "additional_information" in decoder_inputs:
         entries = {}
@@ -348,7 +349,7 @@ def process_inputs(self, ...) -> OmniEngineCoreRequest:
                 )
             entries[key] = entry
         additional_information_payload = AdditionalInformationPayload(entries=entries)
-    
+
     return OmniEngineCoreRequest(
         # ... standard fields ...
         prompt_embeds=prompt_embeds_payload,
@@ -358,7 +359,7 @@ def process_inputs(self, ...) -> OmniEngineCoreRequest:
 
 ### MultimodalOutputProcessor
 
-[`MultimodalOutputProcessor`](../../../vllm_omni/engine/output_processor.py) routes outputs by modality type and accumulates multimodal tensors.
+`MultimodalOutputProcessor` routes outputs by modality type and accumulates multimodal tensors.
 
 #### Output Routing
 
@@ -369,13 +370,13 @@ Routes `EngineCoreOutput` by `output_type` attribute:
 
 #### Tensor Accumulation
 
-[`OmniRequestState`](../../../vllm_omni/engine/output_processor.py) accumulates multimodal tensors across multiple steps:
+`OmniRequestState` accumulates multimodal tensors across multiple steps:
 
 ```python
 def add_multimodal_tensor(self, payload, mm_type):
     # Normalize payload to dict
     incoming = {mm_type or "hidden": payload}
-    
+
     # Accumulate: convert tensors to lists for deferred concatenation
     if isinstance(v, torch.Tensor) and isinstance(existing, torch.Tensor):
         self.mm_accumulated[k] = [existing, v]  # List accumulation
