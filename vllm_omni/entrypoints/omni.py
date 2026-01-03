@@ -389,7 +389,9 @@ class Omni(OmniBase):
             self._ray_pg,
         )
 
-    def generate(self, *args: Any, **kwargs: dict[str, Any]) -> Generator[OmniRequestOutput, None, None] | list[OmniRequestOutput]:
+    def generate(
+        self, *args: Any, **kwargs: dict[str, Any]
+    ) -> Generator[OmniRequestOutput, None, None] | list[OmniRequestOutput]:
         """Generate outputs for the given prompts.
 
         Orchestrates the multi-stage pipeline based on YAML configuration.
@@ -452,7 +454,7 @@ class Omni(OmniBase):
             # Always close on exception to ensure cleanup
             self.close()
             raise e
-    
+
     def _run_generation_with_generator(
         self,
         prompts: PromptType | Sequence[PromptType] | OmniDiffusionRequest | Sequence[OmniDiffusionRequest],

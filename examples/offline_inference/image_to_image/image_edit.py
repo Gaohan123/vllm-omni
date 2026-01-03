@@ -321,7 +321,7 @@ def main():
         print(f"  Input image size: {input_image.size}")
     print(f"  Parallel configuration: ulysses_degree={args.ulysses_degree}, ring_degree={args.ring_degree}")
     print(f"{'=' * 60}\n")
-    
+
     generation_start = time.perf_counter()
     # Generate edited image
     generate_kwargs = {

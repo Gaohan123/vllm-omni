@@ -4,7 +4,6 @@
 Pytest configuration and fixtures for vllm-omni tests.
 """
 
-from collections.abc import Generator
 from typing import Any
 
 import pytest
