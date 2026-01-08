@@ -45,9 +45,9 @@ from vllm_omni.entrypoints.stage_utils import (
     maybe_dump_to_shm,
     set_stage_devices,
 )
+from vllm_omni.entrypoints.utils import filter_dataclass_kwargs
 from vllm_omni.inputs.data import OmniTokensPrompt
 from vllm_omni.utils import detect_device_type
-from vllm_omni.entrypoints.utils import filter_dataclass_kwargs
 
 logger = init_logger(__name__)
 

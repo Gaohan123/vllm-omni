@@ -1,13 +1,13 @@
 # adapted from sglang and fastvideo
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+import dataclasses
 import enum
 import os
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field, fields
 from typing import Any
-import dataclasses
 
 import torch
 from pydantic import model_validator
@@ -454,7 +454,7 @@ class OmniDiffusionConfig:
         if "cache_backend" not in kwargs:
             cache_backend = os.environ.get("DIFFUSION_CACHE_BACKEND") or os.environ.get("DIFFUSION_CACHE_ADAPTER")
             kwargs["cache_backend"] = cache_backend.lower() if cache_backend else "none"
-        
+
         attrs = [attr.name for attr in dataclasses.fields(cls)]
         return cls(**{attr: kwargs.get(attr) for attr in attrs if attr in kwargs})
 

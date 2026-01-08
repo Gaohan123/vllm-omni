@@ -19,10 +19,10 @@ from vllm_omni.engine.arg_utils import OmniEngineArgs
 from vllm_omni.engine.input_processor import OmniInputProcessor
 from vllm_omni.engine.output_processor import MultimodalOutputProcessor
 from vllm_omni.entrypoints.utils import (
+    filter_dataclass_kwargs,
     load_stage_configs_from_model,
     load_stage_configs_from_yaml,
     resolve_model_config_path,
-    filter_dataclass_kwargs,
 )
 
 logger = init_logger(__name__)

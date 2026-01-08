@@ -94,11 +94,7 @@ def _convert_dataclasses_to_dict(obj: Any) -> Any:
         return None
     # Handle lists and tuples (recurse into items, filtering out callables)
     if isinstance(obj, (list, tuple)):
-        return type(obj)(
-            _convert_dataclasses_to_dict(item)
-            for item in obj
-            if not callable(item)
-        )
+        return type(obj)(_convert_dataclasses_to_dict(item) for item in obj if not callable(item))
     # Try to convert any dict-like object (has keys/values methods) to dict
     if hasattr(obj, "keys") and hasattr(obj, "values") and not isinstance(obj, (str, bytes)):
         try:
@@ -106,7 +102,7 @@ def _convert_dataclasses_to_dict(obj: Any) -> Any:
             filtered_keys = []
             for k, v in obj.items():
                 if callable(v):
-                    # Track filtered callable keys for logging (only at top level)                    
+                    # Track filtered callable keys for logging (only at top level)
                     filtered_keys.append(str(k))
                 else:
                     result[k] = _convert_dataclasses_to_dict(v)
