@@ -243,3 +243,16 @@ def get_final_stage_id_for_e2e(
         final_stage_id_for_e2e = last_stage_id
 
     return final_stage_id_for_e2e
+
+
+def filter_dataclass_kwargs(kwargs: dict, dataclass: Any) -> dict:
+    """Filter dataclass kwargs from the given kwargs.
+
+    Args:
+        kwargs: Dictionary of kwargs
+        dataclass: Dataclass to filter kwargs from
+
+    Returns:
+        Dictionary of filtered kwargs
+    """
+    return {k: v for k, v in kwargs.items() if k in dataclass.__annotations__}

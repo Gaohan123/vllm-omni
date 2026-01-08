@@ -22,6 +22,7 @@ from vllm_omni.entrypoints.utils import (
     load_stage_configs_from_model,
     load_stage_configs_from_yaml,
     resolve_model_config_path,
+    filter_dataclass_kwargs,
 )
 
 logger = init_logger(__name__)
@@ -144,7 +145,7 @@ class OmniLLM(LLM):
             model=model,
             compilation_config=compilation_config_instance,
             structured_outputs_config=structured_outputs_instance,
-            **kwargs,
+            **filter_dataclass_kwargs(kwargs, OmniEngineArgs),
         )
 
         # Create the Engine (autoselects V0 vs V1)
