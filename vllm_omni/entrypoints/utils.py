@@ -1,6 +1,6 @@
 import os
 from collections import Counter
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, fields, is_dataclass
 from pathlib import Path
 from typing import Any
 
@@ -41,7 +41,11 @@ def _convert_dataclasses_to_dict(obj: Any) -> Any:
     - Dataclass objects with Literal type annotations (e.g., StructuredOutputsConfig)
     - Counter objects (from collections or vllm.utils)
     - Set objects
+    - Callable objects (functions, methods, etc.)
     - Other non-primitive types
+
+    Args:
+        obj: Object to convert
     """
     # IMPORTANT: Check Counter BEFORE dict, since Counter is a subclass of dict
     # Handle Counter objects (convert to dict)
@@ -65,17 +69,54 @@ def _convert_dataclasses_to_dict(obj: Any) -> Any:
         result = asdict(obj)
         # Recursively process the result to convert any Counter objects
         return _convert_dataclasses_to_dict(result)
-    # Handle dictionaries (recurse into values)
+    # Handle dictionaries (recurse into values, filtering out callables)
     # Note: This must come AFTER Counter check since Counter is a dict subclass
+    # Also before callable check to ensure dicts are processed properly
     if isinstance(obj, dict):
-        return {k: _convert_dataclasses_to_dict(v) for k, v in obj.items()}
-    # Handle lists and tuples (recurse into items)
+        result = {}
+        filtered_keys = []
+        for k, v in obj.items():
+            if callable(v):
+                # Track filtered callable keys for logging (only at top level)
+                filtered_keys.append(str(k))
+            else:
+                result[k] = _convert_dataclasses_to_dict(v)
+        # Log warnings for filtered callable objects (only at top level)
+        if filtered_keys:
+            logger.warning(
+                f"Filtered out {len(filtered_keys)} callable object(s) from base_engine_args "
+                f"that are not compatible with OmegaConf: {filtered_keys}. "
+            )
+        return result
+    # Handle callable objects (functions, methods, etc.) - skip them
+    # Note: This comes after dict/list checks to avoid misclassifying dict-like objects
+    if callable(obj):
+        return None
+    # Handle lists and tuples (recurse into items, filtering out callables)
     if isinstance(obj, (list, tuple)):
-        return type(obj)(_convert_dataclasses_to_dict(item) for item in obj)
+        return type(obj)(
+            _convert_dataclasses_to_dict(item)
+            for item in obj
+            if not callable(item)
+        )
     # Try to convert any dict-like object (has keys/values methods) to dict
     if hasattr(obj, "keys") and hasattr(obj, "values") and not isinstance(obj, (str, bytes)):
         try:
-            return {k: _convert_dataclasses_to_dict(v) for k, v in obj.items()}
+            result = {}
+            filtered_keys = []
+            for k, v in obj.items():
+                if callable(v):
+                    # Track filtered callable keys for logging (only at top level)                    
+                    filtered_keys.append(str(k))
+                else:
+                    result[k] = _convert_dataclasses_to_dict(v)
+            # Log warnings for filtered callable objects (only at top level)
+            if filtered_keys:
+                logger.warning(
+                    f"Filtered out {len(filtered_keys)} callable object(s) from base_engine_args "
+                    f"that are not compatible with OmegaConf: {filtered_keys}. "
+                )
+            return result
         except (TypeError, ValueError, AttributeError):
             # If conversion fails, return as-is
             return obj
@@ -255,4 +296,7 @@ def filter_dataclass_kwargs(kwargs: dict, dataclass: Any) -> dict:
     Returns:
         Dictionary of filtered kwargs
     """
-    return {k: v for k, v in kwargs.items() if k in dataclass.__annotations__}
+    if not is_dataclass(dataclass):
+        raise ValueError(f"Expected dataclass, got {type(dataclass)}")
+    field_names = {f.name for f in fields(dataclass)}
+    return {k: v for k, v in kwargs.items() if k in field_names}

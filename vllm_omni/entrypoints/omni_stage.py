@@ -596,12 +596,14 @@ def _stage_worker(
         else:
             # Default to LLM engine
             engine_args = filter_dataclass_kwargs(engine_args, OmniEngineArgs)
+            engine_args.pop("model")
             stage_engine = OmniLLM(model=model, **engine_args)
     finally:
         # Release all locks by closing file descriptors
         # Locks are automatically released when file descriptors are closed
         # or when process dies
         for lock_fd in lock_files:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
             try:
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)
                 _os.close(lock_fd)
@@ -1095,6 +1097,7 @@ async def _stage_worker_async(
             vllm_config = None  # Diffusion doesn't use vllm_config
         else:
             engine_args = filter_dataclass_kwargs(engine_args, AsyncOmniEngineArgs)
+            engine_args.pop("model")
             omni_engine_args = AsyncOmniEngineArgs(model=model, **engine_args)
             usage_context = UsageContext.OPENAI_API_SERVER
             vllm_config = omni_engine_args.create_engine_config(usage_context=usage_context)
@@ -1108,6 +1111,7 @@ async def _stage_worker_async(
         # Locks are automatically released when file descriptors are closed
         # or when process dies
         for lock_fd in lock_files:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
             try:
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)
                 _os.close(lock_fd)
