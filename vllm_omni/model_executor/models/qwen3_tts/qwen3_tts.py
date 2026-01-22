@@ -66,9 +66,20 @@ class Qwen3TTSModelForGeneration(nn.Module):
     def __init__(self, *, vllm_config: VllmConfig, prefix: str = ""):
         super().__init__()
         model_path = vllm_config.model_config.model
+
+        # Check if flash-attn is installed
+        try:
+            import flash_attn  # noqa: F401
+
+            attn_kwargs = {"attn_implementation": "flash_attention_2"}
+        except ImportError:
+            logger.warning("Flash-Attn is not installed. Using default PyTorch attention implementation.")
+            attn_kwargs = {}
+
         self.model = Qwen3TTSModel.from_pretrained(
             model_path,
             torch_dtype=torch.bfloat16,
+            **attn_kwargs,
         )
         self.task_type = model_path.split("-")[-1].strip("/")
         # Mark that this model produces multimodal outputs
