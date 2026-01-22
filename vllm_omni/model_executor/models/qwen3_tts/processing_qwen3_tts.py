@@ -32,7 +32,8 @@ class Qwen3TTSProcessor(ProcessorMixin):
         tokenizer ([`Qwen2TokenizerFast`], *optional*):
             The text tokenizer.
         chat_template (`Optional[str]`, *optional*):
-            The Jinja template to use for formatting the conversation. If not provided, the default chat template is used.
+            The Jinja template to use for formatting the conversation.
+            If not provided, the default chat template is used.
     """
 
     attributes = ["tokenizer"]
@@ -43,9 +44,10 @@ class Qwen3TTSProcessor(ProcessorMixin):
 
     def __call__(self, text=None, **kwargs) -> BatchFeature:
         """
-        Main method to prepare for the model one or several sequences(s) and audio(s). This method forwards the `text`
-        and `kwargs` arguments to Qwen2TokenizerFast's [`~Qwen2TokenizerFast.__call__`] if `text` is not `None` to encode
-        the text.
+        Main method to prepare for the model one or several sequences(s) and audio(s).
+        This method forwards the `text` and `kwargs` arguments to
+        Qwen2TokenizerFast's [`~Qwen2TokenizerFast.__call__`] if `text` is not `None`
+        to encode the text.
 
         Args:
             text (`str`, `List[str]`, `List[List[str]]`):

@@ -357,8 +357,8 @@ class Qwen3TTSSpeakerEncoder(torch.nn.Module):
         return hidden_states
 
 
-def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
-    return torch.log(torch.clamp(x, min=clip_val) * C)
+def dynamic_range_compression_torch(x, c=1, clip_val=1e-5):
+    return torch.log(torch.clamp(x, min=clip_val) * c)
 
 
 def mel_spectrogram(
@@ -374,7 +374,8 @@ def mel_spectrogram(
 ) -> torch.Tensor:
     """
     Calculate the mel spectrogram of an input signal.
-    This function uses slaney norm for the librosa mel filterbank (using librosa.filters.mel) and uses Hann window for STFT (using torch.stft).
+    This function uses slaney norm for the librosa mel filterbank
+    (using librosa.filters.mel) and uses Hann window for STFT (using torch.stft).
 
     Args:
         y (torch.Tensor): Input signal.
@@ -384,7 +385,9 @@ def mel_spectrogram(
         hop_size (int): Hop size for STFT.
         win_size (int): Window size for STFT.
         fmin (int): Minimum frequency for mel filterbank.
-        fmax (int): Maximum frequency for mel filterbank. If None, defaults to half the sampling rate (fmax = sr / 2.0) inside librosa_mel_fn
+        fmax (int): Maximum frequency for mel filterbank.
+            If None, defaults to half the sampling rate (fmax = sr / 2.0)
+            inside librosa_mel_fn
         center (bool): Whether to pad the input to center the frames. Default is False.
 
     Returns:
@@ -638,9 +641,6 @@ def apply_multimodal_rotary_pos_emb(q, k, cos, sin, mrope_section, mrope_interle
         k (`torch.Tensor`): The key tensor.
         cos (`torch.Tensor`): The cosine part of the rotary embedding.
         sin (`torch.Tensor`): The sine part of the rotary embedding.
-        position_ids (`torch.Tensor`):
-            The position indices of the tokens corresponding to the query and key tensors. For example, this can be
-            used to pass offsetted position ids when working with a KV-cache.
         mrope_section(`List(int)`):
             Multimodal rope section is for channel dimension of temporal, height and width in rope calculation.
         unsqueeze_dim (`int`, *optional*, defaults to 1):
@@ -782,8 +782,10 @@ class Qwen3TTSTalkerCodePredictorOutputWithPast(ModelOutput):
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
         Language modeling loss (for next-token prediction).
     logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
-        Prediction scores of the language modeling head (scores for each vocabulary token before SoftMax).
-    past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+        Prediction scores of the language modeling head
+        (scores for each vocabulary token before SoftMax).
+    past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*,
+        returned when `use_cache=True` is passed or when `config.use_cache=True`):
         Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
         `(batch_size, num_heads, sequence_length, embed_size_per_head)`)
 
@@ -1278,8 +1280,10 @@ class Qwen3TTSTalkerOutputWithPast(ModelOutput):
     loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
         Language modeling loss (for next-token prediction).
     logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
-        Prediction scores of the language modeling head (scores for each vocabulary token before SoftMax).
-    past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+        Prediction scores of the language modeling head
+        (scores for each vocabulary token before SoftMax).
+    past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*,
+        returned when `use_cache=True` is passed or when `config.use_cache=True`):
         Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
         `(batch_size, num_heads, sequence_length, embed_size_per_head)`)
 
@@ -1332,7 +1336,7 @@ class Qwen3TTSTalkerDecoderLayer(GradientCheckpointingLayer):
             use_cache (`bool`, *optional*):
                 If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
                 (see `past_key_values`).
-            past_key_value (`Tuple(torch.FloatTensor)`, *optional*): cached past key and value projection states
+            past_key_values (`Tuple(torch.FloatTensor)`, *optional*): cached past key and value projection states
             cache_position (`torch.LongTensor` of shape `(sequence_length)`, *optional*):
                 Indices depicting the position of the input sequence tokens in the sequence.
             position_embeddings (`tuple[torch.FloatTensor, torch.FloatTensor]`, *optional*):
@@ -1724,8 +1728,12 @@ class Qwen3TTSTalkerForConditionalGeneration(Qwen3TTSTalkerTextPreTrainedModel, 
                 Height: 2 patches, dividing each frame vertically.
                 Width: 2 patches, dividing each frame horizontally.
                 We also have some important parameters:
-                fps (Frames Per Second): The video's frame rate, set to 1. This means one frame is processed each second.
-                interval: The step size for the temporal position IDs, calculated as tokens_per_second * temporal_patch_size / fps. In this case, 25 * 2 / 1 = 50. This means that each temporal patch will be have a difference of 50 in the temporal position IDs.
+                fps (Frames Per Second): The video's frame rate, set to 1.
+                    This means one frame is processed each second.
+                interval: The step size for the temporal position IDs,
+                    calculated as tokens_per_second * temporal_patch_size / fps.
+                    In this case, 25 * 2 / 1 = 50. This means that each temporal
+                    patch will be have a difference of 50 in the temporal position IDs.
                 input_ids: [V V V V V V V V V V V V T T T T T], here V is for vision.
                 text temporal position_ids: [101, 102, 103, 104, 105]
                 text height position_ids: [101, 102, 103, 104, 105]
@@ -1733,9 +1741,6 @@ class Qwen3TTSTalkerForConditionalGeneration(Qwen3TTSTalkerTextPreTrainedModel, 
                 Here we calculate the text start position_ids as the max vision position_ids plus 1.
 
         Args:
-            input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
-                Indices of input sequence tokens in the vocabulary. Padding will be ignored by default should you provide
-                it.
             attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
                 Mask to avoid performing attention on padding token indices. Mask values selected in `[0, 1]`:
 
@@ -2036,7 +2041,7 @@ class Qwen3TTSForConditionalGeneration(Qwen3TTSPreTrainedModel, GenerationMixin)
             speakers = [None] * len(input_ids)
         for index, (input_id, language, speaker) in enumerate(zip(input_ids, languages, speakers)):
             if voice_clone_spk_embeds is None:
-                if speaker == "" or speaker == None:  # Instruct create speaker
+                if speaker == "" or speaker is None:  # Instruct create speaker
                     speaker_embed = None
                 else:
                     if speaker.lower() not in self.config.talker_config.spk_id:
@@ -2070,7 +2075,7 @@ class Qwen3TTSForConditionalGeneration(Qwen3TTSPreTrainedModel, GenerationMixin)
                 language.lower() in ["chinese", "auto"]
                 and speaker != ""
                 and speaker is not None
-                and self.config.talker_config.spk_is_dialect[speaker.lower()] != False
+                and self.config.talker_config.spk_is_dialect[speaker.lower()] is not False
             ):
                 dialect = self.config.talker_config.spk_is_dialect[speaker.lower()]
                 language_id = self.config.talker_config.codec_language_id[dialect]

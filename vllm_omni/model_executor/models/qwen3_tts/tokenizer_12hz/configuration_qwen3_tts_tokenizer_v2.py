@@ -47,7 +47,8 @@ class Qwen3TTSTokenizerV2DecoderConfig(PretrainedConfig):
         intermediate_size (`int`, *optional*, defaults to 3072):
             Dimensionality of the feed-forward (intermediate) layer in each transformer block.
         hidden_act (`str` or `function`, *optional*, defaults to `"silu"`):
-            The non-linear activation function used in the feed-forward layers. Supports `"silu"`, `"relu"`, `"gelu"`, etc.
+            The non-linear activation function used in the feed-forward layers.
+            Supports `"silu"`, `"relu"`, `"gelu"`, etc.
         layer_scale_initial_scale (`float`, *optional*, defaults to 0.01):
             Initial value for LayerScale applied in transformer blocks, helping stabilize training.
         rms_norm_eps (`float`, *optional*, defaults to 1e-5):
@@ -120,8 +121,9 @@ class Qwen3TTSTokenizerV2DecoderConfig(PretrainedConfig):
 
 class Qwen3TTSTokenizerV2Config(PretrainedConfig):
     """
-    This is the configuration class to store the configuration of a [`Qwen3TTSTokenizerV2Config`]. It is used to instantiate a Qwen3TTSTokenizerV2Model
-    model according to the specified sub-models configurations, defining the model architecture.
+    This is the configuration class to store the configuration of a [`Qwen3TTSTokenizerV2Config`].
+    It is used to instantiate a Qwen3TTSTokenizerV2Model model according to the specified
+    sub-models configurations, defining the model architecture.
 
     Configuration objects inherit from [`PretrainedConfig`] and can be used to control the model outputs. Read the
     documentation from [`PretrainedConfig`] for more information.

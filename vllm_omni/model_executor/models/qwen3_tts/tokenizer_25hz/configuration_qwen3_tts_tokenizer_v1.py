@@ -194,8 +194,9 @@ class Qwen3TTSTokenizerV1EncoderConfig(PretrainedConfig):
     r"""
     This is the configuration class to store the configuration of the Qwen3TTSTokenizerV1 Encoder.
 
-    The encoder typically takes mel-spectrogram features and produces high-level audio representations, then (optionally)
-    applies an Audio-VQ module (e.g., GRVQ) to discretize continuous representations into codes.
+    The encoder typically takes mel-spectrogram features and produces high-level
+    audio representations, then (optionally) applies an Audio-VQ module (e.g., GRVQ)
+    to discretize continuous representations into codes.
 
     Args:
         n_mels (`int`, *optional*, defaults to 128):
@@ -277,8 +278,9 @@ class Qwen3TTSTokenizerV1EncoderConfig(PretrainedConfig):
 
 class Qwen3TTSTokenizerV1Config(PretrainedConfig):
     """
-    This is the configuration class to store the configuration of a [`Qwen3TTSTokenizerV1Config`]. It is used to instantiate a Qwen3TTSTokenizerV1Model
-    model according to the specified sub-models configurations, defining the model architecture.
+    This is the configuration class to store the configuration of a [`Qwen3TTSTokenizerV1Config`].
+    It is used to instantiate a Qwen3TTSTokenizerV1Model model according to the specified
+    sub-models configurations, defining the model architecture.
 
     Configuration objects inherit from [`PretrainedConfig`] and can be used to control the model outputs. Read the
     documentation from [`PretrainedConfig`] for more information.

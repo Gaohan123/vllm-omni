@@ -15,7 +15,6 @@
 import base64
 import io
 import urllib.request
-from typing import Union
 from urllib.parse import urlparse
 
 import librosa
@@ -26,16 +25,22 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoConfig, AutoFeatureExtractor, AutoModel
 
 from .tokenizer_12hz.configuration_qwen3_tts_tokenizer_v2 import Qwen3TTSTokenizerV2Config
-from .tokenizer_12hz.modeling_qwen3_tts_tokenizer_v2 import Qwen3TTSTokenizerV2Model
+from .tokenizer_12hz.modeling_qwen3_tts_tokenizer_v2 import (
+    Qwen3TTSTokenizerV2EncoderOutput,
+    Qwen3TTSTokenizerV2Model,
+)
 from .tokenizer_25hz.configuration_qwen3_tts_tokenizer_v1 import Qwen3TTSTokenizerV1Config
-from .tokenizer_25hz.modeling_qwen3_tts_tokenizer_v1 import Qwen3TTSTokenizerV1Model
+from .tokenizer_25hz.modeling_qwen3_tts_tokenizer_v1 import (
+    Qwen3TTSTokenizerV1EncoderOutput,
+    Qwen3TTSTokenizerV1Model,
+)
 
-AudioInput = Union[
-    str,  # wav path, or base64 string
-    np.ndarray,  # 1-D float array
-    list[str],
-    list[np.ndarray],
-]
+AudioInput = (
+    str  # wav path, or base64 string
+    | np.ndarray  # 1-D float array
+    | list[str]
+    | list[np.ndarray]
+)
 
 
 class Qwen3TTSTokenizer:
@@ -207,6 +212,11 @@ class Qwen3TTSTokenizer:
         audios: AudioInput,
         sr: int | None = None,
         return_dict: bool = True,
+    ) -> (
+        Qwen3TTSTokenizerV1EncoderOutput
+        | Qwen3TTSTokenizerV2EncoderOutput
+        | tuple[list[torch.Tensor], list[torch.Tensor] | None, list[torch.Tensor] | None]
+        | tuple[list[torch.Tensor]]
     ):
         """
         Batch-encode audio into discrete codes (and optional conditioning, depending on 25Hz/12Hz).
@@ -224,16 +234,11 @@ class Qwen3TTSTokenizer:
                 Forwarded to model.encode(...). If True, returns ModelOutput.
 
         Returns:
-            25Hz:
-                Qwen3TTSTokenizerV1EncoderOutput (if return_dict=True) with fields:
-                  - audio_codes: List[torch.LongTensor] each (codes_len,)
-                  - xvectors:   List[torch.FloatTensor] each (xvector_dim,)
-                  - ref_mels:   List[torch.FloatTensor] each (mel_len, mel_dim)
-            12Hz:
-                Qwen3TTSTokenizerV2EncoderOutput (if return_dict=True) with fields:
-                  - audio_codes: List[torch.LongTensor] each (codes_len, num_quantizers)
-
-            If return_dict=False, returns the raw tuple from model.encode.
+            Qwen3TTSTokenizerV1EncoderOutput | Qwen3TTSTokenizerV2EncoderOutput | tuple:
+                Encoder output or tuple returned by model.encode. If return_dict=True,
+                returns a model-specific encoder output. For 25Hz models, this includes
+                audio_codes/xvectors/ref_mels; for 12Hz models, this includes audio_codes.
+                If return_dict=False, returns the raw tuple from model.encode.
         """
         wavs = self._normalize_audio_inputs(audios, sr=sr)
 

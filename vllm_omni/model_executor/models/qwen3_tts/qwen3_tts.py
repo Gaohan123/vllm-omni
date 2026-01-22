@@ -17,7 +17,7 @@ import io
 import urllib.request
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import librosa
@@ -38,13 +38,13 @@ from .processing_qwen3_tts import Qwen3TTSProcessor
 
 logger = init_logger(__name__)
 
-AudioLike = Union[
-    str,  # wav path, URL, base64
-    np.ndarray,  # waveform (requires sr)
-    tuple[np.ndarray, int],  # (waveform, sr)
-]
+AudioLike = (
+    str  # wav path, URL, base64
+    | np.ndarray  # waveform (requires sr)
+    | tuple[np.ndarray, int]  # (waveform, sr)
+)
 
-MaybeList = Union[Any, list[Any]]
+MaybeList = Any | list[Any]
 
 
 @dataclass
@@ -83,7 +83,7 @@ class Qwen3TTSModelForGeneration(nn.Module):
         positions: torch.Tensor | None = None,
         intermediate_tensors: Any = None,
         inputs_embeds: torch.Tensor | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> OmniOutput:
         """
         Forward pass for TTS generation model.
@@ -131,7 +131,7 @@ class Qwen3TTSModelForGeneration(nn.Module):
         # Convert result to OmniOutput format
         return self.make_omni_output(result, **kwargs)
 
-    def make_omni_output(self, model_outputs: torch.Tensor | OmniOutput | tuple, **kwargs) -> OmniOutput:
+    def make_omni_output(self, model_outputs: torch.Tensor | OmniOutput | tuple, **kwargs: Any) -> OmniOutput:
         """
         Make an OmniOutput object from model outputs.
         Args:
@@ -192,7 +192,7 @@ class Qwen3TTSModelForGeneration(nn.Module):
         input_ids: torch.Tensor,
         multimodal_embeddings: Any = None,
         is_multimodal: torch.Tensor | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> torch.Tensor:
         """
         Embed input token IDs into embeddings.
@@ -220,7 +220,7 @@ class Qwen3TTSModelForGeneration(nn.Module):
             device=input_ids.device,
         )
 
-    def embed_multimodal(self, **kwargs) -> Any:
+    def embed_multimodal(self, **kwargs: Any) -> Any:
         """
         Embed multimodal inputs (e.g., images, audio).
 
@@ -293,7 +293,7 @@ class Qwen3TTSModel:
     def from_pretrained(
         cls,
         pretrained_model_name_or_path: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Qwen3TTSModel":
         """
         Load a Qwen3 TTS model and its processor in HuggingFace `from_pretrained` style.
@@ -508,7 +508,7 @@ class Qwen3TTSModel:
         subtalker_top_p: float | None = None,
         subtalker_temperature: float | None = None,
         max_new_tokens: int | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """
         Merge user-provided generation arguments with defaults from `generate_config.json`.
@@ -632,7 +632,9 @@ class Qwen3TTSModel:
 
         if len(ref_text_list) != len(ref_audio_list) or len(xvec_list) != len(ref_audio_list):
             raise ValueError(
-                f"Batch size mismatch: ref_audio={len(ref_audio_list)}, ref_text={len(ref_text_list)}, x_vector_only_mode={len(xvec_list)}"
+                f"Batch size mismatch: ref_audio={len(ref_audio_list)}, "
+                f"ref_text={len(ref_text_list)}, "
+                f"x_vector_only_mode={len(xvec_list)}"
             )
 
         normalized = self._normalize_audio_inputs(ref_audio_list)
@@ -657,7 +659,9 @@ class Qwen3TTSModel:
                 if rtext is None or rtext == "":
                     rtext = "For profile run"
                     logger.warning(
-                        f"ref_text is required when x_vector_only_mode=False (ICL mode). Bad index={i}. Please check if it is profile run or you missed to provide ref_text."
+                        f"ref_text is required when x_vector_only_mode=False (ICL mode). "
+                        f"Bad index={i}. Please check if it is profile run or "
+                        f"you missed to provide ref_text."
                     )
                     # raise ValueError(f"ref_text is required when x_vector_only_mode=False (ICL mode). Bad index={i}")
 
@@ -700,7 +704,7 @@ class Qwen3TTSModel:
         ref_text: str | list[str | None] | None = None,
         x_vector_only_mode: bool | list[bool] = False,
         voice_clone_prompt: dict[str, Any] | list[VoiceClonePromptItem] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> tuple[list[np.ndarray], int]:
         """
         Voice clone speech using the Base model.
@@ -734,32 +738,12 @@ class Qwen3TTSModel:
                 If False, ICL mode is used automatically.
             voice_clone_prompt:
                 list[VoiceClonePromptItem] from `create_voice_clone_prompt`.
-            non_streaming_mode:
-                Using non-streaming text input, this option currently only simulates streaming text input when set to `false`,
-                rather than enabling true streaming input or streaming generation.
-            do_sample:
-                Whether to use sampling, recommended to be set to `true` for most use cases.
-            top_k:
-                Top-k sampling parameter.
-            top_p:
-                Top-p sampling parameter.
-            temperature:
-                Sampling temperature; higher => more random.
-            repetition_penalty:
-                Penalty to reduce repeated tokens/codes.
-            subtalker_dosample:
-                Sampling switch for the sub-talker (only valid for qwen3-tts-tokenizer-v2) if applicable.
-            subtalker_top_k:
-                Top-k for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            subtalker_top_p:
-                Top-p for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            subtalker_temperature:
-                Temperature for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            max_new_tokens:
-                Maximum number of new codec tokens to generate.
             **kwargs:
-                Any other keyword arguments supported by HuggingFace Transformers `generate()` can be passed.
-                They will be forwarded to the underlying `Qwen3TTSForConditionalGeneration.generate(...)`.
+                Additional generation options. Common keys include `non_streaming_mode`, `do_sample`, `top_k`, `top_p`,
+                `temperature`, `repetition_penalty`, `subtalker_dosample`, `subtalker_top_k`, `subtalker_top_p`,
+                `subtalker_temperature`, and `max_new_tokens`. Any other keyword arguments supported by HuggingFace
+                Transformers `generate()` can also be passed and will be forwarded to
+                `Qwen3TTSForConditionalGeneration.generate(...)`.
 
         Returns:
             Tuple[List[np.ndarray], int]:
@@ -876,7 +860,7 @@ class Qwen3TTSModel:
         text: str | list[str],
         instruct: str | list[str],
         language: str | list[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> tuple[list[np.ndarray], int]:
         """
         Generate speech with the VoiceDesign model using natural-language style instructions.
@@ -888,32 +872,12 @@ class Qwen3TTSModel:
                 Language(s) for each sample.
             instruct:
                 Instruction(s) describing desired voice/style. Empty string is allowed (treated as no instruction).
-            non_streaming_mode:
-                Using non-streaming text input, this option currently only simulates streaming text input when set to `false`,
-                rather than enabling true streaming input or streaming generation.
-            do_sample:
-                Whether to use sampling, recommended to be set to `true` for most use cases.
-            top_k:
-                Top-k sampling parameter.
-            top_p:
-                Top-p sampling parameter.
-            temperature:
-                Sampling temperature; higher => more random.
-            repetition_penalty:
-                Penalty to reduce repeated tokens/codes.
-            subtalker_dosample:
-                Sampling switch for the sub-talker (only valid for qwen3-tts-tokenizer-v2) if applicable.
-            subtalker_top_k:
-                Top-k for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            subtalker_top_p:
-                Top-p for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            subtalker_temperature:
-                Temperature for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            max_new_tokens:
-                Maximum number of new codec tokens to generate.
             **kwargs:
-                Any other keyword arguments supported by HuggingFace Transformers `generate()` can be passed.
-                They will be forwarded to the underlying `Qwen3TTSForConditionalGeneration.generate(...)`.
+                Additional generation options. Common keys include `non_streaming_mode`, `do_sample`, `top_k`, `top_p`,
+                `temperature`, `repetition_penalty`, `subtalker_dosample`, `subtalker_top_k`, `subtalker_top_p`,
+                `subtalker_temperature`, and `max_new_tokens`. Any other keyword arguments supported by HuggingFace
+                Transformers `generate()` can also be passed and will be forwarded to
+                `Qwen3TTSForConditionalGeneration.generate(...)`.
 
         Returns:
             Tuple[List[np.ndarray], int]:
@@ -976,10 +940,11 @@ class Qwen3TTSModel:
         speaker: str | list[str],
         language: str | list[str] = None,
         instruct: str | list[str] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> tuple[list[np.ndarray], int]:
         """
-        Generate speech with the CustomVoice model using a predefined speaker id, optionally controlled by instruction text.
+        Generate speech with the CustomVoice model using a predefined speaker id,
+        optionally controlled by instruction text.
 
         Args:
             text:
@@ -990,32 +955,12 @@ class Qwen3TTSModel:
                 Speaker name(s). Will be validated against `model.get_supported_speakers()` (case-insensitive).
             instruct:
                 Optional instruction(s). If None, treated as empty (no instruction).
-            non_streaming_mode:
-                Using non-streaming text input, this option currently only simulates streaming text input when set to `false`,
-                rather than enabling true streaming input or streaming generation.
-            do_sample:
-                Whether to use sampling, recommended to be set to `true` for most use cases.
-            top_k:
-                Top-k sampling parameter.
-            top_p:
-                Top-p sampling parameter.
-            temperature:
-                Sampling temperature; higher => more random.
-            repetition_penalty:
-                Penalty to reduce repeated tokens/codes.
-            subtalker_dosample:
-                Sampling switch for the sub-talker (only valid for qwen3-tts-tokenizer-v2) if applicable.
-            subtalker_top_k:
-                Top-k for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            subtalker_top_p:
-                Top-p for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            subtalker_temperature:
-                Temperature for sub-talker sampling (only valid for qwen3-tts-tokenizer-v2).
-            max_new_tokens:
-                Maximum number of new codec tokens to generate.
             **kwargs:
-                Any other keyword arguments supported by HuggingFace Transformers `generate()` can be passed.
-                They will be forwarded to the underlying `Qwen3TTSForConditionalGeneration.generate(...)`.
+                Additional generation options. Common keys include `non_streaming_mode`, `do_sample`, `top_k`, `top_p`,
+                `temperature`, `repetition_penalty`, `subtalker_dosample`, `subtalker_top_k`, `subtalker_top_p`,
+                `subtalker_temperature`, and `max_new_tokens`. Any other keyword arguments supported by HuggingFace
+                Transformers `generate()` can also be passed and will be forwarded to
+                `Qwen3TTSForConditionalGeneration.generate(...)`.
 
         Returns:
             Tuple[List[np.ndarray], int]:
@@ -1057,7 +1002,9 @@ class Qwen3TTSModel:
 
         if not (len(texts) == len(languages) == len(speakers) == len(instructs)):
             raise ValueError(
-                f"Batch size mismatch: text={len(texts)}, language={len(languages)}, speaker={len(speakers)}, instruct={len(instructs)}"
+                f"Batch size mismatch: text={len(texts)}, "
+                f"language={len(languages)}, speaker={len(speakers)}, "
+                f"instruct={len(instructs)}"
             )
 
         self._validate_languages(languages)

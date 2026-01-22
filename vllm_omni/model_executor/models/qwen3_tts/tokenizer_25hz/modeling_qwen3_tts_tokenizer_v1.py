@@ -44,7 +44,7 @@ logger = logging.get_logger(__name__)
 class Qwen3TTSTokenizerV1EncoderOutput(ModelOutput):
     r"""
     audio_codes (`List[torch.LongTensor]`):
-        Discret code embeddings computed using `model.encode`, each tensor has shape (codes_length_i,).
+        Discrete code embeddings computed using `model.encode`, each tensor has shape (codes_length_i,).
     xvectors (`List[torch.FloatTensor]`):
         X-vector embeddings computed using `model.encode`, each tensor has shape (xvector_dim,).
     ref_mels (`List[torch.FloatTensor]`):
@@ -701,8 +701,9 @@ class SnakeBeta(nn.Module):
         - alpha - trainable parameter that controls frequency
         - beta - trainable parameter that controls magnitude
     References:
-        - This activation function is a modified version based on this paper by Liu Ziyin, Tilman Hartwig, Masahito Ueda:
-        https://huggingface.co/papers/2006.08195
+        - This activation function is a modified version based on this paper
+          by Liu Ziyin, Tilman Hartwig, Masahito Ueda:
+          https://huggingface.co/papers/2006.08195
     """
 
     def __init__(self, in_features, alpha=1.0):
@@ -732,7 +733,7 @@ class SnakeBeta(nn.Module):
         return hidden_states
 
 
-def kaiser_sinc_filter1d(cutoff, half_width, kernel_size):
+def kaiser_sinc_filter1d(cutoff, half_width, kernel_size) -> torch.Tensor:
     """Generates a 1D Kaiser-windowed sinc filter.
 
     Args:
@@ -1240,8 +1241,10 @@ class Qwen3TTSTokenizerV1Decoder(Qwen3TTSTokenizerV1DecoderPreTrainedModel):
         attn_impl = config._attn_implementation
         if config._attn_implementation == "flash_attention_2":
             logger.warning_once(
-                "Qwen3TTSTokenizerV1Decoder must inference with fp32, but flash_attention_2 only supports fp16 and bf16, "
-                "attention implementation of Qwen3TTSTokenizerV1Decoder will fallback to sdpa."
+                "Qwen3TTSTokenizerV1Decoder must inference with fp32, "
+                "but flash_attention_2 only supports fp16 and bf16, "
+                "attention implementation of Qwen3TTSTokenizerV1Decoder "
+                "will fallback to sdpa."
             )
             attn_impl = "sdpa"
         elif config._attn_implementation == "eager":
@@ -1456,8 +1459,8 @@ class Qwen3TTSTokenizerV1Model(Qwen3TTSTokenizerV1PreTrainedModel):
             input_values (`torch.Tensor` of shape `(batch_size, sequence_length)`):
                 Float values of the input audio waveform.
             padding_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`):
-                Indicates which inputs are to be ignored due to padding, where elements are either 1 for *not masked* or 0
-                for *masked*.
+                Indicates which inputs are to be ignored due to padding,
+                where elements are either 1 for *not masked* or 0 for *masked*.
             return_dict (`bool`, *optional*):
                 Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
         """
@@ -1466,7 +1469,7 @@ class Qwen3TTSTokenizerV1Model(Qwen3TTSTokenizerV1PreTrainedModel):
         wavs = [value[: mask.sum()] for value, mask in zip(input_values, padding_mask)]
 
         codes, codes_lens = self.encoder.quantize_speech(wavs)
-        codes = [c[:l] for c, l in zip(codes, codes_lens)]
+        codes = [c[:length] for c, length in zip(codes, codes_lens)]
 
         xvectors = []
         ref_mels = []
@@ -1497,7 +1500,7 @@ class Qwen3TTSTokenizerV1Model(Qwen3TTSTokenizerV1PreTrainedModel):
 
         Args:
             audio_codes (`torch.LongTensor`  of shape `(batch_size, codes_length)`, *optional*):
-                Discret code embeddings computed using `model.encode`.
+                Discrete code embeddings computed using `model.encode`.
             xvectors (`torch.FloatTensor` of shape `(batch_size, xvector_dim)`, *optional*):
                 X-vector embeddings computed using `model.encode`.
             ref_mels (`torch.FloatTensor` of shape `(batch_size, mel_length, mel_dim)`, *optional*):
@@ -1511,7 +1514,7 @@ class Qwen3TTSTokenizerV1Model(Qwen3TTSTokenizerV1PreTrainedModel):
         audio_values = self.decoder(code=audio_codes, reference_mel=ref_mels, conditioning=xvectors)
 
         audio_lengths = (audio_codes > 0).sum(1) * self.decode_upsample_rate
-        audio_values = [a[:l] for a, l in zip(audio_values, audio_lengths)]
+        audio_values = [a[:length] for a, length in zip(audio_values, audio_lengths)]
 
         if not return_dict:
             return (audio_values,)

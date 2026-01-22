@@ -16,6 +16,7 @@
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import torch
@@ -53,7 +54,7 @@ logger = logging.get_logger(__name__)
 class Qwen3TTSTokenizerV2EncoderOutput(ModelOutput):
     r"""
     audio_codes (`List[torch.LongTensor]`):
-        Discret code embeddings computed using `model.encode`, each tensor has shape (codes_length_i, num_quantizers).
+        Discrete code embeddings computed using `model.encode`, each tensor has shape (codes_length_i, num_quantizers).
     """
 
     audio_codes: list[torch.LongTensor] = None
@@ -432,9 +433,6 @@ class Qwen3TTSTokenizerV2DecoderTransformerLayer(GradientCheckpointingLayer):
             attention_mask (`torch.FloatTensor`, *optional*):
                 attention mask of size `(batch_size, sequence_length)` if flash attention is used or `(batch_size, 1,
                 query_sequence_length, key_sequence_length)` if default attention is used.
-            output_attentions (`bool`, *optional*):
-                Whether or not to return the attentions tensors of all attention layers. See `attentions` under
-                returned tensors for more detail.
             use_cache (`bool`, *optional*):
                 If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
                 (see `past_key_values`).
@@ -586,8 +584,9 @@ class SnakeBeta(nn.Module):
         - alpha - trainable parameter that controls frequency
         - beta - trainable parameter that controls magnitude
     References:
-        - This activation function is a modified version based on this paper by Liu Ziyin, Tilman Hartwig, Masahito Ueda:
-        https://huggingface.co/papers/2006.08195
+        - This activation function is a modified version based on this paper
+          by Liu Ziyin, Tilman Hartwig, Masahito Ueda:
+          https://huggingface.co/papers/2006.08195
     """
 
     def __init__(self, in_features, alpha=1.0):
@@ -767,7 +766,7 @@ class SplitResidualVectorQuantizer(nn.Module):
 
     Args:
         n_q (int): Number of residual vector quantizers used.
-        n_semantic_q (int): Number of residual vector quantizers used for the semantic quantizer.
+        n_q_semantic (int): Number of residual vector quantizers used for the semantic quantizer.
         **kwargs: Arguments to the constructor of `ResidualVectorQuantizer` that are shared between both.
     """
 
@@ -776,7 +775,7 @@ class SplitResidualVectorQuantizer(nn.Module):
         *,
         n_q: int = 8,
         n_q_semantic: int = 1,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__()
         assert n_q > n_q_semantic, (
@@ -953,8 +952,8 @@ class Qwen3TTSTokenizerV2Model(Qwen3TTSTokenizerV2PreTrainedModel):
             input_values (`torch.Tensor` of shape `(batch_size, sequence_length)`):
                 Float values of the input audio waveform.
             padding_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`):
-                Indicates which inputs are to be ignored due to padding, where elements are either 1 for *not masked* or 0
-                for *masked*.
+                Indicates which inputs are to be ignored due to padding,
+                where elements are either 1 for *not masked* or 0 for *masked*.
             return_dict (`bool`, *optional*):
                 Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
         """
@@ -985,7 +984,7 @@ class Qwen3TTSTokenizerV2Model(Qwen3TTSTokenizerV2PreTrainedModel):
 
         Args:
             audio_codes (`torch.LongTensor`  of shape `(batch_size, codes_length, num_quantizers)`, *optional*):
-                Discret code embeddings computed using `model.encode`.
+                Discrete code embeddings computed using `model.encode`.
             return_dict (`bool`, *optional*):
                 Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
 
@@ -995,7 +994,7 @@ class Qwen3TTSTokenizerV2Model(Qwen3TTSTokenizerV2PreTrainedModel):
         audio_values = self.decoder.chunked_decode(audio_codes.transpose(1, 2)).squeeze(1)
 
         audio_lengths = (audio_codes[..., 0] > 0).sum(1) * self.decode_upsample_rate
-        audio_values = [a[:l] for a, l in zip(audio_values, audio_lengths)]
+        audio_values = [a[:length] for a, length in zip(audio_values, audio_lengths)]
 
         if not return_dict:
             return (audio_values,)

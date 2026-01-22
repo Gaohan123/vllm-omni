@@ -30,7 +30,9 @@ except ImportError:
         from flash_attn.flash_attn_interface import flash_attn_unpadded_func as flash_attn_varlen_func
     except ImportError:
         print(
-            "\n********\nWarning: flash-attn is not installed. Will only run the manual PyTorch version. Please install flash-attn for faster inference.\n********\n "
+            "\n********\nWarning: flash-attn is not installed. "
+            "Will only run the manual PyTorch version. "
+            "Please install flash-attn for faster inference.\n********\n "
         )
         flash_attn_varlen_func = None
 
@@ -106,12 +108,12 @@ def log_mel_spectrogram(
     return log_spec
 
 
-def get_T_after_cnn(L_in, dilation=1):
+def get_T_after_cnn(l_in, dilation=1):
     for padding, kernel_size, stride in eval("[(1,3,1)] + [(1,3,2)] "):
-        L_out = L_in + 2 * padding - dilation * (kernel_size - 1) - 1
-        L_out = 1 + L_out // stride
-        L_in = L_out
-    return L_out
+        l_out = l_in + 2 * padding - dilation * (kernel_size - 1) - 1
+        l_out = 1 + l_out // stride
+        l_in = l_out
+    return l_out
 
 
 def get_mel_audio(audio, padding=False, audio_vq_ds_rate=1, n_mels=128):
@@ -333,7 +335,6 @@ class WhisperEncoder(nn.Module):
                 aftercnn_x_list.append(each_x_split + each_positional_embedding_split.to(each_x_split.dtype))
 
         x = torch.cat(aftercnn_x_list, dim=0)
-        src_len = x.size(0)
 
         output_list = []
         for item in audio_aftercnnlens:

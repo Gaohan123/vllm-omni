@@ -35,18 +35,10 @@ def get_custom_voice_query(use_batch_sample: bool = False) -> QueryResult:
     """
     task_type = "CustomVoice"
     if use_batch_sample:
-        texts = [
-            "成为科学家，是无数中国孩子的梦想。",
-            "你又不认得我们这么久的朋友，你感觉不到。",
-            "呜呜，这些年代受的苦，就跟你说上十天半个月也说不完。",
-        ]
-        instructs = [
-            "吐字清晰精准，字正腔圆",
-            "",
-            "哭腔导致发音略微含混，略显沙哑，带有明显哭腔的紧张感",
-        ]
-        languages = ["Auto", "Chinese", "Chinese"]
-        speakers = ["uncle_fu", "vivian", "eric"]
+        texts = ["其实我真的有发现，我是一个特别善于观察别人情绪的人。", "She said she would be here by noon."]
+        instructs = ["", "Very happy."]
+        languages = ["Chinese", "English"]
+        speakers = ["Vivian", "Ryan"]
         inputs = []
         for text, instruct, language, speaker in zip(texts, instructs, languages, speakers):
             prompt = f"<|im_start|>assistant\n{text}<|im_end|>\n<|im_start|>assistant\n"
@@ -64,9 +56,10 @@ def get_custom_voice_query(use_batch_sample: bool = False) -> QueryResult:
                 }
             )
     else:
-        text = "成为科学家，是无数中国孩子的梦想。"
-        language = "Auto"
-        speaker = "uncle_fu"
+        text = "其实我真的有发现，我是一个特别善于观察别人情绪的人。"
+        language = "Chinese"
+        speaker = "Vivian"
+        instruct = "用特别愤怒的语气说"
         prompts = f"<|im_start|>assistant\n{text}<|im_end|>\n<|im_start|>assistant\n"
         inputs = {
             "prompt": prompts,
@@ -75,12 +68,13 @@ def get_custom_voice_query(use_batch_sample: bool = False) -> QueryResult:
                 "text": [text],
                 "language": [language],
                 "speaker": [speaker],
+                "instruct": [instruct],
                 "max_new_tokens": [2048],
             },
         }
     return QueryResult(
         inputs=inputs,
-        model_name="/home/dyvm6xra/dyvm6xrauser08/.cache/huggingface/hub/Qwen3-TTS-12Hz-1.7B-CustomVoice/",
+        model_name="Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
     )
 
 
@@ -96,16 +90,14 @@ def get_voice_design_query(use_batch_sample: bool = False) -> QueryResult:
     task_type = "VoiceDesign"
     if use_batch_sample:
         texts = [
-            "我们全船全军都该换换装备了。",
-            "我叫通义千问。你叫什么名字呀",
-            "I am Qwen. What is your name? Can you tell me a story?",
+            "哥哥，你回来啦，人家等了你好久好久了，要抱抱！",
+            "It's in the top drawer... wait, it's empty? No way, that's impossible! I'm sure I put it there!",
         ]
         instructs = [
-            "以洪亮有力的音量发声,语速偏快,结尾略微放慢。",
-            "用低沉有磁性的男性嗓音。",
-            "用小女孩的声音。",
+            "体现撒娇稚嫩的萝莉女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。",
+            "Speak in an incredulous tone, but with a hint of panic beginning to creep into your voice.",
         ]
-        languages = ["Chinese", "Auto", "English"]
+        languages = ["Chinese", "English"]
         inputs = []
         for text, instruct, language in zip(texts, instructs, languages):
             prompt = f"<|im_start|>assistant\n{text}<|im_end|>\n<|im_start|>assistant\n"
@@ -123,8 +115,8 @@ def get_voice_design_query(use_batch_sample: bool = False) -> QueryResult:
                 }
             )
     else:
-        text = "我们全船全军都该换换装备了。"
-        instruct = "以洪亮有力的音量发声,展示出男性特有的坚韧与威严感。语速偏快,语调从头至尾保持流畅,结尾略微放慢。"
+        text = "哥哥，你回来啦，人家等了你好久好久了，要抱抱！"
+        instruct = "体现撒娇稚嫩的萝莉女声，音调偏高且起伏明显，营造出黏人、做作又刻意卖萌的听觉效果。"
         language = "Chinese"
         prompt = f"<|im_start|>assistant\n{text}<|im_end|>\n<|im_start|>assistant\n"
         inputs = {
@@ -140,7 +132,7 @@ def get_voice_design_query(use_batch_sample: bool = False) -> QueryResult:
         }
     return QueryResult(
         inputs=inputs,
-        model_name="/home/dyvm6xra/dyvm6xrauser08/.cache/huggingface/hub/Qwen3-TTS-12Hz-1.7B-VoiceDesign/",
+        model_name="Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
     )
 
 
@@ -155,16 +147,18 @@ def get_base_query(use_batch_sample: bool = False, mode_tag: str = "icl") -> Que
         QueryResult with Omni inputs and the Base model path.
     """
     task_type = "Base"
-    ref_audio_path_1 = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-Omni/cookbook/asr_zh.wav"
+    ref_audio_path_1 = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav"
     ref_audio_single = ref_audio_path_1
-    ref_text_single = "甚至出现交易几乎停滞的情况。"
-    syn_text_single = "安安上课爱捣乱，一捣乱四邻不安，安老师劝安安莫捣乱，安安心上课不捣乱。"
+    ref_text_single = (
+        "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+    )
+    syn_text_single = "Good one. Okay, fine, I'm just gonna leave this sock monkey here. Goodbye."
     syn_lang_single = "Auto"
     x_vector_only_mode = mode_tag == "xvec_only"
     if use_batch_sample:
         syn_text_batch = [
-            "安安上课爱捣乱，一捣乱四邻不安，安老师劝安安莫捣乱，安安心上课不捣乱。",
-            "I am Qwen. What is your name? Can you tell me a story?",
+            "Good one. Okay, fine, I'm just gonna leave this sock monkey here. Goodbye.",
+            "其实我真的有发现，我是一个特别善于观察别人情绪的人。",
         ]
         syn_lang_batch = ["Chinese", "English"]
         inputs = []
@@ -200,7 +194,7 @@ def get_base_query(use_batch_sample: bool = False, mode_tag: str = "icl") -> Que
         }
     return QueryResult(
         inputs=inputs,
-        model_name="/home/dyvm6xra/dyvm6xrauser08/.cache/huggingface/hub/Qwen3-TTS-12Hz-0.6B-Base/",
+        model_name="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
     )
 
 

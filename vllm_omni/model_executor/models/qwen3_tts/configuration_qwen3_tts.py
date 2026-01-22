@@ -30,8 +30,10 @@ class Qwen3TTSSpeakerEncoderConfig(PretrainedConfig):
         enc_dim (`int`, *optional*, defaults to 192):
             The dimension of the final speaker embedding.
         enc_channels (`list[int]`, *optional*, defaults to `[512, 512, 512, 512, 1536]`):
-            A list of output channels for each TDNN/SERes2Net layer in the encoder. The first channel size is for the initial TDNN layer,
-            the intermediate ones for the `SqueezeExcitationRes2NetBlock` layers, and the last one for the multi-layer feature aggregation.
+            A list of output channels for each TDNN/SERes2Net layer in the encoder.
+            The first channel size is for the initial TDNN layer,
+            the intermediate ones for the `SqueezeExcitationRes2NetBlock` layers,
+            and the last one for the multi-layer feature aggregation.
         enc_kernel_sizes (`list[int]`, *optional*, defaults to `[5, 3, 3, 3, 1]`):
             A list of kernel sizes for each layer in the encoder, corresponding to `enc_channels`.
         enc_dilations (`list[int]`, *optional*, defaults to `[1, 2, 3, 4, 1]`):
@@ -69,8 +71,9 @@ class Qwen3TTSSpeakerEncoderConfig(PretrainedConfig):
 
 class Qwen3TTSTalkerCodePredictorConfig(PretrainedConfig):
     r"""
-    This is the configuration class to store the configuration of a [`Qwen3TTSTalkerCodePredictorModel`]. It is used to instantiate a
-    Qwen3TTSTalkerCodePredictor model according to the specified arguments, defining the model architecture.
+    This is the configuration class to store the configuration of a [`Qwen3TTSTalkerCodePredictorModel`].
+    It is used to instantiate a Qwen3TTSTalkerCodePredictor model according to the specified arguments,
+    defining the model architecture.
 
     Configuration objects inherit from [`PretrainedConfig`] and can be used to control the model outputs. Read the
     documentation from [`PretrainedConfig`] for more information.
@@ -78,7 +81,8 @@ class Qwen3TTSTalkerCodePredictorConfig(PretrainedConfig):
 
     Args:
         vocab_size (`int`, *optional*, defaults to 151936):
-            Vocabulary size of the Qwen3TTSTalkerCodePredictor model. Defines the number of different tokens that can be represented by the
+            Vocabulary size of the Qwen3TTSTalkerCodePredictor model.
+            Defines the number of different tokens that can be represented by the
             `inputs_ids` passed when calling [`Qwen3TTSTalkerCodePredictorModel`]
         hidden_size (`int`, *optional*, defaults to 4096):
             Dimension of the hidden representations.
@@ -156,7 +160,8 @@ class Qwen3TTSTalkerCodePredictorConfig(PretrainedConfig):
         sliding_window (`int`, *optional*, defaults to 4096):
             Sliding window attention (SWA) window size. If not specified, will default to `4096`.
         max_window_layers (`int`, *optional*, defaults to 28):
-            The number of layers using full attention. The first `max_window_layers` layers will use full attention, while any
+            The number of layers using full attention.
+            The first `max_window_layers` layers will use full attention, while any
             additional layer afterwards will use SWA (Sliding Window Attention).
         layer_types (`list`, *optional*):
             Attention pattern for each layer.
@@ -267,7 +272,8 @@ class Qwen3TTSTalkerConfig(PretrainedConfig):
 
     Args:
         vocab_size (`int`, *optional*, defaults to 151936):
-            Vocabulary size of the Qwen3TTSTalker model. Defines the number of different tokens that can be represented by the
+            Vocabulary size of the Qwen3TTSTalker model.
+            Defines the number of different tokens that can be represented by the
             `inputs_ids` passed when calling [`Qwen3TTSTalkerModel`]
         hidden_size (`int`, *optional*, defaults to 2048):
             Dimension of the hidden representations.

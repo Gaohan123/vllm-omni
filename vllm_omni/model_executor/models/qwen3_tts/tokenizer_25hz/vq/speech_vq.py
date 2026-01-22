@@ -29,8 +29,8 @@ from .core_vq import DistributedGroupResidualVectorQuantization
 from .whisper_encoder import Conv1d, ConvTranspose1d, WhisperEncoder
 
 
-def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
-    return torch.log(torch.clamp(x, min=clip_val) * C)
+def dynamic_range_compression_torch(x, c=1, clip_val=1e-5):
+    return torch.log(torch.clamp(x, min=clip_val) * c)
 
 
 def spectral_normalize_torch(magnitudes):
@@ -42,18 +42,24 @@ class MelSpectrogramFeatures(nn.Module):
     """
     Calculate the BigVGAN style mel spectrogram of an input signal.
     Args:
-        filter_length (int): The number of samples in the filter window, used for the Fourier Transform. Default is 1024.
-        hop_length (int): The number of samples between successive frames (stride of the STFT). Default is 160.
-        win_length (int): The length of the window function applied to each frame, usually less than or equal to the filter length. Default is 640.
-        n_mel_channels (int): The number of Mel-frequency channels to output from the Mel-scale spectrogram. Default is 80.
-        mel_fmin (int): The minimum frequency (in Hz) of the Mel-scale spectrogram. Default is 0.
-        mel_fmax (int): The maximum frequency (in Hz) of the Mel-scale spectrogram. Default is 8000.
-        sampling_rate (int): The sampling rate of the audio data (in Hz). Default is 16000.
-        sampling_rate_org (int, optional): The original sampling rate of the audio data before any resampling (in Hz), if applicable. Default is None.
-        padding (str): The padding mode for the input signal. 'center' pads the signal symmetrically around its center. Default is 'center'.
-
-    Returns:
-        torch.Tensor: Mel spectrogram.
+        filter_length (int): The number of samples in the filter window,
+            used for the Fourier Transform. Default is 1024.
+        hop_length (int): The number of samples between successive frames
+            (stride of the STFT). Default is 160.
+        win_length (int): The length of the window function applied to each frame,
+            usually less than or equal to the filter length. Default is 640.
+        n_mel_channels (int): The number of Mel-frequency channels to output
+            from the Mel-scale spectrogram. Default is 80.
+        mel_fmin (int): The minimum frequency (in Hz) of the Mel-scale spectrogram.
+            Default is 0.
+        mel_fmax (int): The maximum frequency (in Hz) of the Mel-scale spectrogram.
+            Default is 8000.
+        sampling_rate (int): The sampling rate of the audio data (in Hz).
+            Default is 16000.
+        sampling_rate_org (int, optional): The original sampling rate of the audio
+            data before any resampling (in Hz), if applicable. Default is None.
+        padding (str): The padding mode for the input signal. 'center' pads the signal
+            symmetrically around its center. Default is 'center'.
     """
 
     def __init__(
@@ -342,7 +348,6 @@ class WhisperEncoderVQ(WhisperEncoder):
 
         pe_for_vq = torch.cat(pe_for_vq_list, dim=0)
         x = torch.cat(aftercnn_x_list, dim=0)
-        src_len = x.size(0)
 
         output_list = []
         for item in audio_aftercnnlens:
