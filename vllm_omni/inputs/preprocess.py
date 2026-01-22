@@ -38,8 +38,12 @@ class OmniInputPreprocessor(InputPreprocessor):
                 tokenization_kwargs=tokenization_kwargs,
                 mm_uuids=mm_uuids,
             )
-            inputs["prompt_embeds"] = parsed_content.get("prompt_embeds")
-            inputs["additional_information"] = parsed_content.get("additional_information")
+            prompt_embeds = parsed_content.get("prompt_embeds")
+            if prompt_embeds is not None:
+                inputs["prompt_embeds"] = prompt_embeds
+            additional_information = parsed_content.get("additional_information")
+            if additional_information is not None:
+                inputs["additional_information"] = additional_information
         else:
             prompt_token_ids = self._tokenize_prompt(
                 prompt_text,
