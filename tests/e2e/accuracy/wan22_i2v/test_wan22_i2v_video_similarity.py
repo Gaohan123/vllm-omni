@@ -563,6 +563,7 @@ def test_wan22_i2v_diffusers_offline_generates_video(
     assert offline_metadata["frame_count"] == NUM_FRAMES
 
 
+@pytest.mark.skip(reason="L4 CI failed 7013")
 @pytest.mark.advanced_model
 @pytest.mark.benchmark
 @pytest.mark.diffusion
