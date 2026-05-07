@@ -83,7 +83,7 @@ def _ensure_dataset_snapshot(dataset_id: str) -> Path:
         return candidates[0]
 
     subprocess.run(
-        ["huggingface-cli", "download", "--repo-type", "dataset", dataset_id],
+        ["hf", "download", "--repo-type", "dataset", dataset_id],
         check=True,
     )
     candidates = _dataset_cache_dirs(dataset_id)
