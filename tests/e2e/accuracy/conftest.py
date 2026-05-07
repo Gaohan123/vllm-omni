@@ -53,7 +53,7 @@ def pytest_addoption(parser):
         "--wan22-i2v-image-source",
         action="store",
         default=None,
-        help="Image source for Wan2.2 I2V accuracy tests. Can be local path or remote URL.",
+        help="Image source for Wan2.2 I2V accuracy tests. Can be local path or remote URL",
     )
     group.addoption(
         "--wan22-i2v-online-timeout-seconds",
