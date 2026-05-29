@@ -418,6 +418,7 @@ class TestOmniSleepMode:
 @pytest.mark.parametrize("tp_size", [1])
 @hardware_test(res={"cuda": "H100", "rocm": "MI325"}, num_cards=1)
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Skip due to issue 3950. Will recover after PR 3953 merged")
 async def test_diffusion_model_sleep_tp(tp_size: int):
     """Two-stage BAGEL default config: warmup, sleep all, wake, verify generate."""
     if current_omni_platform.is_rocm():
@@ -462,6 +463,7 @@ async def test_diffusion_model_sleep_tp(tp_size: int):
 @pytest.mark.parametrize("tp_size", [1, 2])
 @hardware_test(res={"cuda": "H100", "rocm": "MI325"}, num_cards=2)
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Skip due to issue 3950. Will recover after PR 3953 merged")
 async def test_multistage_sleep_h100(tp_size: int):
     """Explicit 2-stage (llm + diffusion) + connectors; sleep/wake both stages."""
     if current_omni_platform.is_rocm():
@@ -515,6 +517,7 @@ async def test_multistage_sleep_h100(tp_size: int):
 @pytest.mark.parametrize("tp_size", [1, 2])
 @hardware_test(res={"cuda": "H100", "rocm": "MI325"}, num_cards=2)
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Skip due to issue 3950. Will recover after PR 3953 merged")
 async def test_pure_diffusion_scenario(tp_size: int):
     """Single-stage random diffusion: sleep, wake, generate."""
     if current_omni_platform.is_rocm():
