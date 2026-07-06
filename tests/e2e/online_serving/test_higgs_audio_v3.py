@@ -59,7 +59,6 @@ _REF_TEXT = "Okay. Yeah. I resent you. I love you. I respect you. But you know w
 class TestHiggsAudioV3OnlineHappyPath:
     """Plain-text -> audio happy paths against the live HTTP server."""
 
-    @pytest.mark.skip(reason="issue#4916")
     @pytest.mark.core_model
     @pytest.mark.advanced_model
     @pytest.mark.tts
@@ -280,6 +279,7 @@ class TestHiggsAudioV3OnlineInlineControlTokens:
 class TestHiggsAudioV3OnlineVoiceClone:
     """Voice clone via the two payload shapes the model serves."""
 
+    @pytest.mark.skip(reason="issue#4916")
     @pytest.mark.core_model
     @pytest.mark.advanced_model
     @pytest.mark.tts
