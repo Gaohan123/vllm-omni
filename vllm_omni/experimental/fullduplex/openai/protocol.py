@@ -418,6 +418,7 @@ class ConversationHistory:
     pending_item_audio_text_marks: dict[str, list[DuplexAssistantAudioTextMark]] = field(default_factory=dict)
     pending_item_input_commit_seqs: dict[str, int] = field(default_factory=dict)
     pending_truncations_ms: dict[str, int] = field(default_factory=dict)
+    hard_truncations_ms: dict[str, int] = field(default_factory=dict)
     last_assistant_full_message: dict[str, object] | None = None
     last_assistant_audio_text_marks: list[DuplexAssistantAudioTextMark] = field(default_factory=list)
     assistant_response_snapshots: dict[str, tuple[dict[str, object], tuple[DuplexAssistantAudioTextMark, ...], int]] = (
@@ -585,6 +586,7 @@ class DuplexSession:
         if response_id is None or response_id == self.active_response_id:
             return
         self._conversation.assistant_response_snapshots.pop(response_id, None)
+        self._conversation.hard_truncations_ms.pop(f"item_{response_id}", None)
 
     @property
     def playback(self) -> DuplexPlaybackView:
@@ -1132,6 +1134,7 @@ class DuplexSession:
         self._conversation.pending_item_audio_text_marks.pop(item_id, None)
         self._conversation.pending_item_input_commit_seqs.pop(item_id, None)
         self._conversation.pending_truncations_ms.pop(item_id, None)
+        self._conversation.hard_truncations_ms.pop(item_id, None)
         removed_placeholder = self._discard_history_item_placeholder(item_id)
         if response_id is not None:
             self._conversation.assistant_response_snapshots.pop(response_id, None)
@@ -1149,8 +1152,18 @@ class DuplexSession:
         *,
         audio_end_ms: int,
         playback: DuplexPlaybackCursor | DuplexPlaybackView | None = None,
+        hard: bool = False,
     ) -> bool:
         playback = playback or self._playback_cursor_for_item_id(item_id)
+        audio_end_ms = max(0, int(audio_end_ms))
+        if hard:
+            previous_cap_ms = self._conversation.hard_truncations_ms.get(item_id)
+            self._conversation.hard_truncations_ms[item_id] = (
+                audio_end_ms if previous_cap_ms is None else min(previous_cap_ms, audio_end_ms)
+            )
+        hard_cap_ms = self._conversation.hard_truncations_ms.get(item_id)
+        if hard_cap_ms is not None:
+            audio_end_ms = min(audio_end_ms, hard_cap_ms)
         response_id = item_id.removeprefix("item_") if item_id.startswith("item_") else None
         response_snapshot = (
             self._conversation.assistant_response_snapshots.get(response_id) if response_id is not None else None

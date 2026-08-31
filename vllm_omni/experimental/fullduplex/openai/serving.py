@@ -1724,7 +1724,8 @@ class OmniDuplexSessionHandler(
                 }
             )
             return
-        if event.get("truncate") is True:
+        hard_truncate = event.get("truncate") is True
+        if hard_truncate:
             playback = session.acknowledge_playback(
                 int(played_ms),
                 committed_cursor,
@@ -1756,6 +1757,7 @@ class OmniDuplexSessionHandler(
                 item_id,
                 audio_end_ms=committed_cursor,
                 playback=playback,
+                hard=hard_truncate,
             )
         elif session.pending_history_item_ids:
             # A plain playback ack has no OpenAI item id. Commit the only
@@ -1768,6 +1770,7 @@ class OmniDuplexSessionHandler(
                     item_id,
                     audio_end_ms=committed_cursor,
                     playback=playback,
+                    hard=hard_truncate,
                 )
         elif session.active_response_id is not None:
             item_id = f"item_{session.active_response_id}"
@@ -1775,6 +1778,7 @@ class OmniDuplexSessionHandler(
                 item_id,
                 audio_end_ms=committed_cursor,
                 playback=playback,
+                hard=hard_truncate,
             )
         elif session.last_assistant_full_message is not None:
             if item_id is None and session.history_item_ids:
@@ -1790,6 +1794,7 @@ class OmniDuplexSessionHandler(
                     item_id,
                     audio_end_ms=committed_cursor,
                     playback=playback,
+                    hard=hard_truncate,
                 )
         await send_json(
             {

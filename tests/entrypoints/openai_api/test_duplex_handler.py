@@ -4539,6 +4539,54 @@ async def test_precommit_partial_ack_extends_history_after_response_finishes():
 
 
 @pytest.mark.asyncio
+async def test_explicit_truncate_seals_snapshot_against_later_playback_ack():
+    handler = OmniDuplexSessionHandler(
+        chat_service=FakeChatService(FakeEngineClient()),
+        config_timeout_s=0.1,
+        idle_timeout_s=1,
+    )
+    session = DuplexSession(
+        session_id="sid-hard-playback-truncate",
+        config=DuplexSessionConfig(playback_commit_policy="ack_only"),
+    )
+    response_id = session.begin_response()
+    item_id = f"item_{response_id}"
+    session.append_assistant_text("hello world")
+    session.mark_audio_sent(1000, text_chars=len("hello world"))
+    session.end_response(commit_text=False, preserve_request=True)
+    ws = TimedWebSocket()
+
+    await handler._handle_playback_ack(
+        session,
+        {
+            "type": "playback.ack",
+            "response_id": response_id,
+            "item_id": item_id,
+            "played_ms": 500,
+            "committed_ms": 500,
+            "truncate": True,
+        },
+        ws.send_json,
+    )
+    assert session.history == ({"role": "assistant", "content": "hello"},)
+
+    await handler._handle_playback_ack(
+        session,
+        {
+            "type": "playback.ack",
+            "response_id": response_id,
+            "item_id": item_id,
+            "played_ms": 1000,
+            "committed_ms": 1000,
+        },
+        ws.send_json,
+    )
+
+    assert not any(message.get("type") == "error" for message in ws.sent)
+    assert session.history == ({"role": "assistant", "content": "hello"},)
+
+
+@pytest.mark.asyncio
 async def test_cancel_does_not_append_old_assistant_after_followup_user():
     handler = OmniDuplexSessionHandler(
         chat_service=FakeChatService(FakeEngineClient()),
