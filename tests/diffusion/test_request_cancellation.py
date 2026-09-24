@@ -7,6 +7,7 @@ import queue
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing.shared_memory import SharedMemory
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +22,11 @@ pytestmark = [pytest.mark.core_model, pytest.mark.diffusion, pytest.mark.cpu]
 
 
 @pytest.fixture
-def registry():
+def registry(monkeypatch):
+    from vllm_omni.platforms import current_omni_platform
+
+    # These tests exercise the cancellation protocol without device work.
+    monkeypatch.setattr(current_omni_platform, "synchronize", lambda: None)
     signals = RequestCancellationRegistry()
     yield signals
     signals.close()
@@ -85,7 +90,8 @@ def test_checkpoint_observes_cancel_during_device_wait(registry, monkeypatch):
             check_request_cancellation(synchronize=True)
 
 
-def test_successful_checkpoint_does_not_synchronize(registry, monkeypatch):
+@pytest.mark.parametrize("synchronize_early", [False, True])
+def test_checkpoint_drains_once_before_abort_only(registry, monkeypatch, synchronize_early):
     from unittest.mock import Mock
 
     from vllm_omni.platforms import current_omni_platform
@@ -94,11 +100,18 @@ def test_successful_checkpoint_does_not_synchronize(registry, monkeypatch):
     monkeypatch.setattr(current_omni_platform, "synchronize", synchronize)
     signal = registry.create("request")
     with request_cancellation_scope([signal]):
-        check_request_cancellation(synchronize=True)
+        check_request_cancellation(synchronize=synchronize_early)
         synchronize.assert_not_called()
+        # Simulate work queued after a clean checkpoint. Cancellation at the
+        # next checkpoint must drain it before exception unwinding drops refs.
+        pending_work = [object()]
+        synchronize.side_effect = pending_work.clear
         registry.cancel(["request"])
         with pytest.raises(DiffusionRequestAbortedError):
-            check_request_cancellation(synchronize=True)
+            try:
+                check_request_cancellation(synchronize=synchronize_early)
+            finally:
+                assert not pending_work
         synchronize.assert_called_once_with()
 
 
@@ -182,6 +195,7 @@ def _collective_worker(rank, name, rendezvous, ready, first_check, second_check,
     import torch.distributed as dist
 
     from vllm_omni.diffusion.distributed import parallel_state
+    from vllm_omni.platforms import current_omni_platform
 
     dist.init_process_group("gloo", init_method=f"file://{rendezvous}", rank=rank, world_size=2)
     # Exercise a real CPU collective without constructing GPU model groups.
@@ -190,7 +204,11 @@ def _collective_worker(rank, name, rendezvous, ready, first_check, second_check,
     group.cpu_group = dist.group.WORLD
     parallel_state._WORLD = group
     try:
-        with torch.inference_mode(), request_cancellation_scope([name]):
+        with (
+            torch.inference_mode(),
+            patch.object(current_omni_platform, "synchronize") as synchronize,
+            request_cancellation_scope([name]),
+        ):
             dist.barrier()
             if rank == 0:
                 ready.set()
@@ -203,10 +221,12 @@ def _collective_worker(rank, name, rendezvous, ready, first_check, second_check,
                 with request_cancellation_scope([name] if rank == 0 else absent):
                     check_request_cancellation()
             results.put((rank, "missing_signal_kept_running"))
+            synchronize.assert_not_called()
             assert second_check.wait(120)
             try:
                 check_request_cancellation()
             except DiffusionRequestAbortedError:
+                synchronize.assert_called_once_with()
                 results.put((rank, "fully_cancelled_wave_stopped"))
             else:
                 raise AssertionError("All cancelled ranks must stop")

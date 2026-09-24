@@ -3498,11 +3498,14 @@ def test_long_video_shape_requires_explicit_opt_in(duration):
 
 @pytest.mark.parametrize("preencode", [False, True])
 @pytest.mark.parametrize("cancel_phase", ["before_prepare", "prepare", "diffuse"])
-def test_request_cancellation_at_prepare_and_decode_boundaries(preencode, cancel_phase):
+def test_request_cancellation_at_prepare_and_decode_boundaries(preencode, cancel_phase, monkeypatch):
     from vllm_omni.diffusion.cancellation import RequestCancellationRegistry, request_cancellation_scope
     from vllm_omni.diffusion.data import DiffusionRequestAbortedError
     from vllm_omni.diffusion.models.minimax_h3 import MiniMaxH3Pipeline
+    from vllm_omni.platforms import current_omni_platform
 
+    synchronize = Mock()
+    monkeypatch.setattr(current_omni_platform, "synchronize", synchronize)
     pipeline = object.__new__(MiniMaxH3Pipeline)
     torch.nn.Module.__init__(pipeline)
     registry = RequestCancellationRegistry()
@@ -3527,6 +3530,7 @@ def test_request_cancellation_at_prepare_and_decode_boundaries(preencode, cancel
             registry.cancel(["request"])
         with request_cancellation_scope([signal]), pytest.raises(DiffusionRequestAbortedError):
             pipeline.forward(_t2va_batch())
+        synchronize.assert_called_once_with()
         if cancel_phase == "before_prepare":
             pipeline._prepare_request_inputs.assert_not_called()
         if cancel_phase != "diffuse":

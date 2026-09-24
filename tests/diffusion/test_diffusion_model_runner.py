@@ -1421,6 +1421,9 @@ def test_execute_model_batch_cancellation_preserves_live_peer(monkeypatch, cance
         RequestCancellationRegistry,
         check_request_cancellation,
     )
+    from vllm_omni.platforms import current_omni_platform
+
+    monkeypatch.setattr(current_omni_platform, "synchronize", lambda: None)
 
     class CancellableBatchPipeline(_BatchPipeline):
         supports_request_cancellation = True

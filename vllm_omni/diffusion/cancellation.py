@@ -99,7 +99,9 @@ def check_request_cancellation(*, synchronize: bool = False) -> None:
     """Stop a cancelled execution wave without stranding a peer's collectives.
 
     ``synchronize=True`` drains queued device work only when cancellation has
-    been requested locally. Successful steps retain their asynchronous execution.
+    been requested locally, before re-reading the flags. Every abort drains queued
+    device work before unwinding. Successful steps retain asynchronous execution
+    when no local cancellation is observed.
     Independent requests coupled by an AllGather offload wave must all be cancelled
     before the wave can exit; cancelling one must not abort its live peers.
     """
@@ -110,10 +112,12 @@ def check_request_cancellation(*, synchronize: bool = False) -> None:
     import torch
 
     locally_requested = any(signal is not None and signal.buf[0] for signal in signals)
+    device_drained = False
     if synchronize and locally_requested:
         from vllm_omni.platforms import current_omni_platform
 
         current_omni_platform.synchronize()
+        device_drained = True
 
     cancelled = bool(signals) and all(signal is not None and signal.buf[0] for signal in signals)
     if torch.distributed.is_initialized():
@@ -130,4 +134,8 @@ def check_request_cancellation(*, synchronize: bool = False) -> None:
     if cancelled:
         from vllm_omni.diffusion.data import DiffusionRequestAbortedError
 
+        if not device_drained:
+            from vllm_omni.platforms import current_omni_platform
+
+            current_omni_platform.synchronize()
         raise DiffusionRequestAbortedError("Request cancelled at a model execution boundary")
