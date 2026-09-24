@@ -74,13 +74,32 @@ def test_mixed_batch_keeps_uncancelled_request_running(registry):
 def test_checkpoint_observes_cancel_during_device_wait(registry, monkeypatch):
     from vllm_omni.platforms import current_omni_platform
 
+    first = registry.create("first")
     signal = registry.create("request")
-    # DELETE can arrive while the current GPU step completes. It must be
-    # observed before another step is queued, not read before the device wait.
+    registry.cancel(["first"])
+    # A local cancellation triggers the device wait. A peer can be cancelled
+    # during that wait; re-read before deciding whether the whole batch stops.
     monkeypatch.setattr(current_omni_platform, "synchronize", lambda: registry.cancel(["request"]))
-    with request_cancellation_scope([signal]):
+    with request_cancellation_scope([first, signal]):
         with pytest.raises(DiffusionRequestAbortedError):
             check_request_cancellation(synchronize=True)
+
+
+def test_successful_checkpoint_does_not_synchronize(registry, monkeypatch):
+    from unittest.mock import Mock
+
+    from vllm_omni.platforms import current_omni_platform
+
+    synchronize = Mock()
+    monkeypatch.setattr(current_omni_platform, "synchronize", synchronize)
+    signal = registry.create("request")
+    with request_cancellation_scope([signal]):
+        check_request_cancellation(synchronize=True)
+        synchronize.assert_not_called()
+        registry.cancel(["request"])
+        with pytest.raises(DiffusionRequestAbortedError):
+            check_request_cancellation(synchronize=True)
+        synchronize.assert_called_once_with()
 
 
 def test_close_removes_all_owned_signals(registry):
@@ -178,6 +197,12 @@ def _collective_worker(rank, name, rendezvous, ready, first_check, second_check,
             assert first_check.wait(120)
             check_request_cancellation()
             results.put((rank, "partial_wave_kept_running"))
+            # A replica missing its token (or all local requests) still votes
+            # false. Both ranks must reach each collective without deadlocking.
+            for absent in ([None], []):
+                with request_cancellation_scope([name] if rank == 0 else absent):
+                    check_request_cancellation()
+            results.put((rank, "missing_signal_kept_running"))
             assert second_check.wait(120)
             try:
                 check_request_cancellation()
@@ -207,9 +232,11 @@ def test_spawned_ranks_agree_before_leaving_collective_wave(registry, tmp_path):
         assert ready.wait(120)
         registry.cancel(["0"])
         first_check.set()
-        assert {results.get(timeout=120) for _ in workers} == {
+        assert {results.get(timeout=120) for _ in range(2 * len(workers))} == {
             (0, "partial_wave_kept_running"),
             (1, "partial_wave_kept_running"),
+            (0, "missing_signal_kept_running"),
+            (1, "missing_signal_kept_running"),
         }
         registry.cancel(["1"])
         second_check.set()

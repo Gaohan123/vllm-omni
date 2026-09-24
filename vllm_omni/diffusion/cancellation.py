@@ -75,13 +75,16 @@ _current_signals: ContextVar[tuple[SharedMemory | None, ...] | None] = ContextVa
 
 
 @contextmanager
-def request_cancellation_scope(signal_names: Sequence[str | None]) -> Iterator[None]:
+def request_cancellation_scope(signal_names: Sequence[str | None], *, enabled: bool = True) -> Iterator[None]:
     """Attach worker readers without taking ownership of the engine's names."""
     signals: list[SharedMemory | None] = []
     try:
-        for name in signal_names:
+        for name in signal_names if enabled else ():
             signals.append(SharedMemory(name=name) if name is not None else None)
-        token = _current_signals.set(tuple(signals) if any(signals) else None)
+        # An opted-in rank without a local signal must still join every
+        # checkpoint collective and vote "not cancelled". None means only
+        # that this execution does not use cooperative cancellation at all.
+        token = _current_signals.set(tuple(signals) if enabled else None)
         try:
             yield
         finally:
@@ -95,8 +98,8 @@ def request_cancellation_scope(signal_names: Sequence[str | None]) -> Iterator[N
 def check_request_cancellation(*, synchronize: bool = False) -> None:
     """Stop a cancelled execution wave without stranding a peer's collectives.
 
-    ``synchronize=True`` bounds device work queued ahead of a model-step boundary.
-    Without it, a CPU could enqueue the entire denoise loop before DELETE arrives.
+    ``synchronize=True`` drains queued device work only when cancellation has
+    been requested locally. Successful steps retain their asynchronous execution.
     Independent requests coupled by an AllGather offload wave must all be cancelled
     before the wave can exit; cancelling one must not abort its live peers.
     """
@@ -106,12 +109,13 @@ def check_request_cancellation(*, synchronize: bool = False) -> None:
 
     import torch
 
-    if synchronize:
+    locally_requested = any(signal is not None and signal.buf[0] for signal in signals)
+    if synchronize and locally_requested:
         from vllm_omni.platforms import current_omni_platform
 
         current_omni_platform.synchronize()
 
-    cancelled = all(signal is not None and signal.buf[0] for signal in signals)
+    cancelled = bool(signals) and all(signal is not None and signal.buf[0] for signal in signals)
     if torch.distributed.is_initialized():
         from vllm_omni.diffusion.distributed.parallel_state import get_world_group
 

@@ -121,8 +121,10 @@ request for execution.
 (`VLLM_OMNI_ABORT_TIMEOUT`, default 2s), then cancels the frontend
 task. Cancellation cleanup is also bounded and best-effort: it confirms
 the abort was submitted. MiniMax-H3 checks cancellation at model boundaries,
-including after each denoising step, and skips the remaining generation when
-cancelled. A device operation already in flight is allowed to finish.
+including before and after input preparation, after each denoising step, and
+before decode, and skips the remaining generation when cancelled. Input
+preparation or decoding already in progress may finish before the next boundary.
+Successful steps do not force device synchronization for cancellation.
 Parallel ranks agree before stopping; independent requests sharing a distributed
 AllGather offload wave can stop that wave early only when all its requests are
 cancelled, so a cancelled request cannot strand its live peers in a collective.

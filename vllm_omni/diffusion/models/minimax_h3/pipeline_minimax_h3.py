@@ -2497,10 +2497,12 @@ class MiniMaxH3Pipeline(
     def forward(self, request: DiffusionRequestBatch) -> DiffusionOutput:
         if len(request.prompts) != 1:
             raise OmniClientError("MiniMax H3 supports one request at a time")
+        check_request_cancellation()
         context = self._prepare_request_inputs(
             request.prompts[0],
             request.sampling_params,
         )
+        check_request_cancellation()
         denoise_kwargs = self._denoise_kwargs(context)
         num_outputs = context["num_outputs"]
         videos = []

@@ -854,7 +854,10 @@ class DiffusionModelRunner(DiffusionStagePayloadMixin):
                     in_diffusion_kv_memory_profile=in_diffusion_kv_memory_profile,
                 ),
                 paged_kv_context,
-                request_cancellation_scope([getattr(req, "cancellation_signal", None) for req in reqs]),
+                request_cancellation_scope(
+                    [getattr(req, "cancellation_signal", None) for req in reqs],
+                    enabled=getattr(self.pipeline, "supports_request_cancellation", False) is True,
+                ),
             ):
                 with record_function(record_name):
                     try:
@@ -867,6 +870,8 @@ class DiffusionModelRunner(DiffusionStagePayloadMixin):
                             pipeline_name=type(self.pipeline).__name__,
                         )
                     except DiffusionRequestAbortedError as exc:
+                        # The checkpoint aborts only a fully cancelled wave;
+                        # a mixed batch must keep running for its live peers.
                         logger.info(
                             "Stopped cancelled diffusion request(s) %s at a model execution boundary",
                             [req.request_id for req in reqs],
