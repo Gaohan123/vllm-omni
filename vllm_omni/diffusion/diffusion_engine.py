@@ -932,6 +932,8 @@ class DiffusionEngine:
             # path, and repeating executor.shutdown() is unsafe.
             self._shutting_down = True
             self._closed = True
+            if self._request_cancellations is not None:
+                self._request_cancellations.cancel_all()
             if self.stop_event is not None:
                 self.stop_event.set()
             streams = list(self._out_streams.values())
@@ -944,7 +946,13 @@ class DiffusionEngine:
         # If Worker shutdown fails, retain the Scheduler reservations. A
         # remote producer may still be writing into those allocations.
         self.executor.shutdown()
-        self.scheduler.close()
+        try:
+            self.scheduler.close()
+        finally:
+            # Workers are down, so readers cannot attach or use the signals.
+            # Release them even if scheduler cleanup itself fails.
+            if self._request_cancellations is not None:
+                self._request_cancellations.close()
         self._shutdown_complete = True
 
     def _emit_finished_outputs(
@@ -1561,6 +1569,9 @@ class DiffusionEngine:
             if worker_thread.is_alive():
                 worker_thread.join(timeout=10)
             if worker_thread.is_alive():
+                # Keep cancellation names available: an in-flight worker may
+                # not have attached its readers yet. A later close releases
+                # them after execution and executor shutdown have completed.
                 logger.warning(
                     "Worker thread did not terminate within 10s; scheduler and executor shutdown will be deferred."
                 )
