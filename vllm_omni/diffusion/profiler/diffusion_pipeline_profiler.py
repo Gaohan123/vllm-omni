@@ -1,7 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM-Omni project
+
 import functools
 import re
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from threading import Lock
 from typing import Any
 
@@ -44,7 +48,7 @@ def _parse_part(part: str) -> tuple[str, int | None]:
     return part, None
 
 
-def _get_attribute_by_path(obj: Any, path: str) -> tuple[Any, str]:
+def _get_attribute_by_path(obj: Any, path: str) -> tuple[Any, str | None]:
     """Traverse an object by dotted path and return (parent_obj, attribute_name)."""
     parts = path.split(".")
     current = obj
@@ -65,7 +69,7 @@ def wrap_methods_by_paths(root_obj: Any, method_paths: list[str]) -> None:
     """Wrap specified methods of an object with profiler."""
     for path in method_paths:
         obj, method_name = _get_attribute_by_path(root_obj, path)
-        if not obj or not hasattr(obj, method_name):
+        if not obj or method_name is None or not hasattr(obj, method_name):
             logger.warning(f"[DiffusionPipelineProfiler] Method path {path} not found")
             continue
 
@@ -118,3 +122,25 @@ class DiffusionPipelineProfilerMixin:
     def clear_profiler_records(self) -> None:
         with self._profiler_lock:
             self._stage_durations.clear()
+
+    @contextmanager
+    def profile_stage(self, stage: str) -> Iterator[None]:
+        """Record an inline stage with the same timing semantics as wrapped methods."""
+        if not getattr(self, "enable_diffusion_pipeline_profiler", False):
+            yield
+            return
+
+        metric_name = f"{self.__class__.__name__}.{stage}"
+        synchronize = current_omni_platform.is_available()
+        if synchronize:
+            current_omni_platform.synchronize()
+        start_time = time.perf_counter()
+        try:
+            yield
+        finally:
+            if synchronize:
+                current_omni_platform.synchronize()
+            duration = time.perf_counter() - start_time
+            logger.info("[DiffusionPipelineProfiler] %s took %.6fs", metric_name, duration)
+            with self._profiler_lock:
+                self._stage_durations[metric_name] = self._stage_durations.get(metric_name, 0.0) + duration
