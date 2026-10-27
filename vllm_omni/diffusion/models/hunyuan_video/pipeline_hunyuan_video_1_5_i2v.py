@@ -573,7 +573,7 @@ class HunyuanVideo15I2VPipeline(
         timesteps = self.scheduler.timesteps
         self._num_timesteps = len(timesteps)
 
-        with self.progress_bar(total=len(timesteps)) as pbar:
+        with self.profile_stage("diffuse"), self.progress_bar(total=len(timesteps)) as pbar:
             for i, t in enumerate(timesteps):
                 self._current_timestep = t
 
@@ -635,7 +635,8 @@ class HunyuanVideo15I2VPipeline(
         self._current_timestep = None
 
         if current_omni_platform.is_available():
-            current_omni_platform.empty_cache()
+            with self.profile_stage("empty_cache"):
+                current_omni_platform.empty_cache()
 
         if output_type == "latent":
             output = latents

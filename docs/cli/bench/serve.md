@@ -1092,6 +1092,8 @@ Use the same pattern with `--endpoint /v1/images/edits` or `--endpoint /v1/video
 - `poll_interval_s` (default `2.0`): sleep between status polls
 - `poll_timeout_s` (default `21600`, i.e. 6 hours): give up waiting for the job
 
+Changing the poll interval also changes measured **e2el** and request throughput. Re-measure hardware baselines before changing it in a performance test configuration. For diagnosis, use a shorter interval such as `0.25` seconds and compare the server-reported `mean_video_generation_ms` and `stage_durations_mean` separately from historical e2el baselines.
+
 **VIDEO_RTF** prefers server-reported generation time when available:
 
 - `video_rtf = video_generation_time_ms / 1000 / video_duration`, where `video_generation_time_ms` comes from response `stage_durations` (or `inference_time_s` as fallback)
